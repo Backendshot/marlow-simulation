@@ -1,0 +1,158 @@
+package com.api.route
+
+import controller.TodoController
+import io.ktor.http.*
+import io.ktor.server.plugins.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import model.GlobalResponse
+import model.Todo
+import model.TodoValidator
+
+
+fun Route.todoRouting() {
+
+    route("/todos") {
+        get {
+            val todos = TodoController().fetchTodos()
+            call.respond(Json.encodeToString(todos))
+        }
+        get("/{id?}") {
+            try {
+                val id: Int = call.parameters["id"]?.toIntOrNull() ?: return@get call.respondText(
+                    "Missing id", status = HttpStatusCode.BadRequest
+                )
+                val todo = TodoController().fetchTodoById(id)
+                call.respond(Json.encodeToString(todo))
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.toString()))
+            }
+        }
+        get("/import-data-todos") {
+            try {
+                val todos = TodoController().importTodoData()
+                call.respond(
+                    HttpStatusCode.OK, GlobalResponse(200, true, "Successfully imported todo data with $todos rows")
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    GlobalResponse(500, false, "Invalid JSON types: ${e.localizedMessage}")
+                )
+            }
+        }
+    }
+    route("/api/v2/") {
+        get("readall") {
+            val getTodos = TodoController().readAllTodos()
+            call.respond(Json.encodeToString(getTodos))
+        }
+
+        get("read/{id?}") {
+            try {
+                val id: Int = call.parameters["id"]?.toIntOrNull() ?: return@get call.respondText(
+                    "Missing id", status = HttpStatusCode.BadRequest
+                )
+                val getTodo = TodoController().readTodoById(id);
+                call.respond(Json.encodeToString(getTodo))
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.BadRequest, GlobalResponse(404, false, "Todo not found: ${e.localizedMessage}")
+                )
+            }
+        }
+
+        post("create") {
+            try {
+                val raw = call.receiveText()
+                val element = Json.parseToJsonElement(raw)
+                val obj = element.jsonObject
+
+                val jsonValidationErrors = TodoValidator().validate(obj)
+
+                if (jsonValidationErrors.isNotEmpty()) {
+                    return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        GlobalResponse(400, false, "Invalid JSON types: $jsonValidationErrors")
+                    )
+                }
+
+                val todo = Json.decodeFromJsonElement<Todo>(element)
+                val id = TodoController().createTodo(todo)
+                call.respond(HttpStatusCode.Created, GlobalResponse(201, true, "Todo with ID #$id has been added."))
+            } catch (e: SerializationException) {
+                call.respond(
+                    HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON types: ${e.localizedMessage}")
+                )
+            } catch (e: CannotTransformContentToTypeException) {
+                call.respond(
+                    HttpStatusCode.BadRequest, GlobalResponse(400, false, "Wrong input")
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage)
+                )
+            }
+        }
+
+        patch("update/{id?}") {
+            try {
+                val id: Int = call.parameters["id"]?.toIntOrNull() ?: return@patch call.respond(
+                    status = HttpStatusCode.BadRequest, GlobalResponse(400, false, "Missing id")
+                )
+                val raw = call.receiveText()
+                val element = Json.parseToJsonElement(raw)
+                val obj = element.jsonObject
+
+                val jsonValidationErrors = TodoValidator().validate(obj)
+
+                if (jsonValidationErrors.isNotEmpty()) {
+                    return@patch call.respond(
+                        HttpStatusCode.BadRequest,
+                        GlobalResponse(400, false, "Invalid JSON types: $jsonValidationErrors")
+                    )
+                }
+                val todoData = Json.decodeFromJsonElement<Todo>(obj)
+                val result = TodoController().updateTodo(id, todoData)
+                when (result) {
+                    0 -> call.respond(
+                        HttpStatusCode.InternalServerError,
+                        GlobalResponse(500, false, "Could not update Todo. Please try again.")
+                    )
+
+                    1 -> call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Todo updated successfully."))
+                }
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError, GlobalResponse(500, false, "${e.localizedMessage}")
+                )
+            }
+        }
+
+        delete("delete/{id?}") {
+            try {
+                val id: Int = call.parameters["id"]?.toIntOrNull() ?: return@delete call.respond(
+                    status = HttpStatusCode.BadRequest, GlobalResponse(400, false, "Missing id")
+                )
+
+                val checkValue = TodoController().deleteTodo(id)
+
+                if (checkValue < 1) return@delete call.respond(
+                    HttpStatusCode.InternalServerError,
+                    GlobalResponse(500, false, "Deletion not successful, please try again.")
+                )
+
+                call.respond(status = HttpStatusCode.OK, GlobalResponse(200, true, "Todo deleted successfully."))
+            } catch (e: Exception) {
+                call.respond(
+                    status = HttpStatusCode.BadRequest, GlobalResponse(500, false, "Server Error: ${e.toString()}")
+                )
+            }
+        }
+    }
+}
