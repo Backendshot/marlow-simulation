@@ -1,4 +1,4 @@
-package com.api.query
+package com.marlow.todo.query
 
 class TodoQuery {
     companion object {
@@ -6,7 +6,7 @@ class TodoQuery {
         //"CREATE TABLE IF NOT EXISTS TODOS (ID INT PRIMARY KEY, USERID INT, TITLE VARCHAR(255), COMPLETED BOOLEAN)" //formerly CREATE_TABLE_TODOS
         const val GET_ALL_TODOS = "SELECT user_id, id, title, completed FROM get_all_todos()" //"SELECT * FROM todos"
         const val GET_TODO_BY_ID = "SELECT user_id, id, title, completed FROM get_todo_by_id(?)" //"SELECT * FROM todos WHERE id = ?"
-        const val INSERT_TODO = "CALL insert_todo(?, ?, ?, ?, ?)"//"INSERT INTO todos (user_id, id, title, completed) VALUES (?, ?, ?, ?)"
+        const val INSERT_TODO = "CALL insert_todo(?, ?, ?, ?)"//"INSERT INTO todos (user_id, id, title, completed) VALUES (?, ?, ?, ?)"
         const val UPDATE_TODO = "CALL update_todo(?, ?, ?, ?, ?)"//"UPDATE todos SET user_id = ?, title = ?, completed = ? WHERE id = ?"
         const val DELETE_TODO = "CALL delete_todo(?, ?)" //"DELETE FROM todos WHERE id = ?"
         const val CHECK_DUPLICATE_TODO = "SELECT check_duplicate_todo(?)"
