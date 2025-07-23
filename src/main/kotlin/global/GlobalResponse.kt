@@ -1,4 +1,4 @@
-package model
+package com.marlow.global
 
 import kotlinx.serialization.Serializable
 
