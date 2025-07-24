@@ -1,15 +1,15 @@
 package com.marlow.todo.controller
 
-import com.marlow.todo
-import com.api.query.TodoQuery
+import com.marlow.client
+import com.marlow.todo.query.TodoQuery
 import com.marlow.configuration.Config
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import model.Todo
-import model.TodoValidator
+import com.marlow.todo.model.Todo
+import com.marlow.todo.model.TodoValidator
 import java.net.URL
 import java.sql.Types
 import kotlin.collections.find
@@ -19,42 +19,47 @@ import kotlin.collections.map
 import kotlin.text.isEmpty
 import kotlin.use
 
+
 class TodoController {
 
     val connection = Config().connect()
 
-    suspend fun createTodo(todo: Todo): Int = withContext(Dispatchers.IO) {
-        val duplicateTodo = connection.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO)
-        duplicateTodo.setInt(1, todo.id)
-        val resultDuplicate = duplicateTodo.executeQuery()
-        resultDuplicate.next()
-        if (resultDuplicate.getBoolean(1)) {
-            throw kotlin.Exception("Todo at id #${todo.id} already exists")
+    suspend fun createTodo(todo: Todo): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        // Check duplicates
+        connection.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO).use { duplicateStmt ->
+            duplicateStmt.setInt(1, todo.id)
+            duplicateStmt.executeQuery().use { rs ->
+                rs.next().takeIf { !rs.getBoolean(1) } //takeIf will null the value if the returned value is true (there *is* a duplicate id)
+                    ?: throw kotlin.Exception("Todo at id #${todo.id} already exists") //a null value results in an Exception being thrown
+            }
         }
 
+        // Validate
         val validator = TodoValidator()
         val sanitizedTodo = validator.sanitize(todo)
         val validationErrors = validator.validate(sanitizedTodo)
-
+        // Inspect and either print or throw
         if (validationErrors.isEmpty()) {
+            println("✅ Validation passed! No errors found.")
             println("Sanitized and Validated Todo: $sanitizedTodo")
         } else {
-            throw kotlin.Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
+            throw Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
         }
 
-        val result = connection.prepareCall(TodoQuery.INSERT_TODO).use { stmt ->
+        var count: Int
+        val rowsInserted = connection.prepareStatement(TodoQuery.INSERT_TODO).use { stmt ->
             stmt.setInt(1, sanitizedTodo.userId)
             stmt.setInt(2, sanitizedTodo.id)
             stmt.setString(3, sanitizedTodo.title)
             stmt.setBoolean(4, sanitizedTodo.completed)
-            stmt.registerOutParameter(5, Types.INTEGER)
             stmt.execute()
+            count = stmt.updateCount
 
-            return@use stmt.getInt(5)
+            println(count) //currently returns -1 on successful update, but otherwise works with current logic
+
         }
 
-        //TODO: How do I return both the id (todo.id) and the amount of rows inputted (result)? Is it necessary to do in the first place?
-        return@withContext todo.id;
+        return@withContext todo.id to count
     }
 
     suspend fun readAllTodos(): MutableList<Todo> = withContext(Dispatchers.IO) {
@@ -89,7 +94,7 @@ class TodoController {
 
     suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(Dispatchers.IO) {
         if (id != todo.id) {
-            throw kotlin.Exception("id cannot be updated")
+            throw kotlin.Exception("id to be updated must match api request")
         }
         val validator = TodoValidator()
         val sanitizedTodo = validator.sanitize(todo)
@@ -124,6 +129,7 @@ class TodoController {
             return@use stmt.getInt(2)
         }
 
+        //Todo: add a message that indicates that the todo to be deleted does not exist
         return@withContext result
     }
 
@@ -188,18 +194,19 @@ class TodoController {
 
             var insertCount = 0
             connection.use { conn ->
-                val statement = conn.prepareStatement(TodoQuery.INSERT_TODO)
-                for (todo in sanitizedTodos) {
-                    statement.setInt(1, todo.userId)
-                    statement.setInt(2, todo.id)
-                    statement.setString(3, todo.title)
-                    statement.setBoolean(4, todo.completed)
-                    statement.addBatch()
+                conn.prepareCall(TodoQuery.INSERT_TODO).use { stmt ->
+                    for (todo in sanitizedTodos) {
+                        stmt.setInt(1, todo.userId)
+                        stmt.setInt(2, todo.id)
+                        stmt.setString(3, todo.title)
+                        stmt.setBoolean(4, todo.completed)
+                        stmt.addBatch()
+                    }
+                    val result = stmt.executeBatch()
+                    insertCount = result.size
+                    return@withContext insertCount
                 }
-                val result = statement.executeBatch()
-                insertCount = result.size
             }
-            return@withContext insertCount
         } catch (e: Exception) {
             println("Error importing todo data: ${e.message}")
             throw e

@@ -1,6 +1,6 @@
-package com.api.route
+package com.marlow.todo.route
 
-import controller.TodoController
+import com.marlow.todo.controller.TodoController
 import io.ktor.http.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
@@ -10,9 +10,9 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
-import model.GlobalResponse
-import model.Todo
-import model.TodoValidator
+import com.marlow.global.GlobalResponse
+import com.marlow.todo.model.Todo
+import com.marlow.todo.model.TodoValidator
 
 
 fun Route.todoRouting() {
@@ -81,10 +81,14 @@ fun Route.todoRouting() {
                         GlobalResponse(400, false, "Invalid JSON types: $jsonValidationErrors")
                     )
                 }
+                println("No validation errors")
 
                 val todo = Json.decodeFromJsonElement<Todo>(element)
-                val id = TodoController().createTodo(todo)
-                call.respond(HttpStatusCode.Created, GlobalResponse(201, true, "Todo with ID #$id has been added."))
+                val resultMap = TodoController().createTodo(todo)
+                if (resultMap.component2() == 0) {
+                    call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, "Todo was not added. Please try again."))
+                }
+                call.respond(HttpStatusCode.Created, GlobalResponse(201, true, "Todo with ID #${resultMap.component1()} has been added."))
             } catch (e: SerializationException) {
                 call.respond(
                     HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON types: ${e.localizedMessage}")

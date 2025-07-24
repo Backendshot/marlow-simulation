@@ -12,6 +12,10 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
+kotlin {
+    jvmToolchain(18) // you can try other versions here
+}
+
 repositories {
     mavenCentral()
 }
@@ -34,4 +38,11 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
     implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
+    implementation("io.ktor:ktor-client-core:2.3.4")
+    implementation("io.ktor:ktor-client-cio:2.3.4")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+    //Login Dependencies
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 }
