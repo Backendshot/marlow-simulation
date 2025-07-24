@@ -2,7 +2,7 @@ package com.marlow.todo.controller
 
 import com.api.client
 import com.api.query.TodoQuery
-import config.TodoConfig
+import com.marlow.configuration.Config
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,7 @@ import kotlin.use
 
 class TodoController {
 
-    val connection = TodoConfig().connect()
+    val connection = Config().connect()
 
     suspend fun createTodo(todo: Todo): Int = withContext(Dispatchers.IO) {
         val duplicateTodo = connection.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO)
