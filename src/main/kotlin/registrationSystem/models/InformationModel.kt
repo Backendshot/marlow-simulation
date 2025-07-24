@@ -38,4 +38,18 @@ data class Information(
         image      = image?.trim()?.sanitizeInput(),
         roleType   = roleType.trim().uppercase()
     )
+
+    fun validate(): List<String> {
+        val errors = mutableListOf<String>()
+
+        if (username.isBlank()) errors.add("Username is required.")
+        if (!username.matches(Regex("^[a-zA-Z0-9._-]{3,}$"))) {
+            errors.add("Username must be at least 3 characters and contain only letters, numbers, dots, hyphens, or underscores.")
+        }
+        if (firstName.isBlank()) errors.add("First Name is required.")
+        if (email.isBlank()) errors.add("Email is required.")
+        if (roleType.isBlank()) errors.add("Role is required.")
+
+        return errors
+    }
 }
