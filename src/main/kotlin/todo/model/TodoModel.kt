@@ -1,4 +1,4 @@
-package model
+package com.marlow.todo.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
