@@ -1,4 +1,4 @@
-package com.marlow.todo.plugin
+package com.marlow.configuration
 
 import io.ktor.http.*
 import io.ktor.server.application.*

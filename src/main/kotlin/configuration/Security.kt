@@ -1,4 +1,4 @@
-package com.marlow.todo.plugin
+package com.marlow.configuration
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
