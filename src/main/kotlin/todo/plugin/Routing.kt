@@ -1,11 +1,11 @@
 package com.marlow.todo.plugin
 
-import com.marlow.registrationSystem.routes.registrationRouting
 import com.marlow.todo.route.todoRouting
 import io.ktor.server.application.*
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.routing.*
+import registrationRouting
 
 fun Application.configureRouting() {
     routing {

@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
 @Serializable
-data class Information(
+data class InformationModel(
     val id: Int? = null,
     val username: String,
     val firstName: String,
@@ -29,7 +29,7 @@ data class Information(
         require(roleType.isNotBlank()) { "Role type must not be blank" }
     }
 
-    fun sanitized(): Information = this.copy(
+    fun sanitized(): InformationModel = this.copy(
         username   = username.trim().sanitizeInput(),
         firstName  = firstName.trim().sanitizeInput(),
         middleName = middleName?.trim()?.sanitizeInput(),
