@@ -1,6 +1,6 @@
 package com.marlow.todo.controller
 
-import com.api.client
+import com.marlow.todo
 import com.api.query.TodoQuery
 import com.marlow.configuration.Config
 import io.ktor.client.call.*

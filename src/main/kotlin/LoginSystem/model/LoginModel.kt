@@ -9,7 +9,7 @@ data class LoginModel(
     val password: String,
     val jwt_token: String? = null,
     val active_session: Boolean = false,
-    val active_session_deleted: Boolean = false,
+    val active_session_deleted: Boolean = true,
 )
 
 
