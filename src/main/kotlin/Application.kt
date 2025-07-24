@@ -19,9 +19,9 @@ val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
         json(
             Json {
-                prettyPrint = true
+                prettyPrint       = true
                 ignoreUnknownKeys = false
-                isLenient = false
+                isLenient         = false
                 coerceInputValues = false
             },
         )
@@ -33,10 +33,10 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    val connection = Config().connect()
+    val connection       = Config().connect()
     val bearerTokenQuery = connection.prepareCall(TodoQuery.GET_BEARER_TOKEN)
-    val resultSet = bearerTokenQuery.executeQuery()
-    val bearerToken = if (resultSet.next()) {
+    val resultSet        = bearerTokenQuery.executeQuery()
+    val bearerToken      = if (resultSet.next()) {
         resultSet.getString("bearer_token")
     } else {
         null
@@ -67,6 +67,5 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
-//    configureDatabases()
     configureRouting()
 }

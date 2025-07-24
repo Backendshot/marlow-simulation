@@ -1,5 +1,6 @@
 package com.marlow.todo.plugin
 
+import com.marlow.registrationSystem.routes.registrationRouting
 import com.marlow.todo.route.todoRouting
 import io.ktor.server.application.*
 import io.ktor.server.auth.authenticate
@@ -12,5 +13,6 @@ fun Application.configureRouting() {
         authenticate("auth-bearer") {
             todoRouting()
         }
-    }
+        registrationRouting()
+   }
 }
