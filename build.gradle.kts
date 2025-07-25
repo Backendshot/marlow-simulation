@@ -36,6 +36,7 @@ dependencies {
     implementation(libs.ktor.server.config.yaml)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
+    implementation("de.mkammerer:argon2-jvm:2.12")
     testImplementation(libs.ktor.server.tests)
     implementation(libs.ktor.client.content.negotiation) //implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation(libs.ktor.client.core) //implementation("io.ktor:ktor-client-core:2.3.4")

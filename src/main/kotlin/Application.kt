@@ -14,6 +14,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
+//import io.ktor.server.auth.form
 import io.ktor.server.netty.EngineMain
 
 val client = HttpClient(CIO) {
@@ -44,6 +45,21 @@ fun Application.module() {
             ?.getString("bearer_token") //use the value to get the bearer_token
     }
 
+// Create a default Argon2 instance
+//    val argon2: Argon2 = Argon2Factory.create()
+//
+//// Hash (costs: iterations, memoryKiB, parallelism)
+//    val hash: String = argon2.hash(2, 65536, 1, "mySecretPassword".toCharArray())
+//
+//// Verify
+//    val matches: Boolean = argon2.verify(hash, "attemptedPassword".toCharArray())
+//
+//    if (matches) {
+//        println("✅ Password OK")
+//    } else {
+//        println("❌ Bad credentials")
+//    }
+
     install(Authentication) {
         bearer("auth-bearer") {
             realm = "Access to the '/' path"
@@ -55,6 +71,16 @@ fun Application.module() {
                 }
             }
         }
+//        form("login") {
+//            userParamName = "username"
+//            passwordParamName = "password"
+//            validate { credentials ->
+//                val storedHash = userRepo.getHashFor(credentials.name)          // fetch from DB
+//        if (argon2.verify(storedHash, credentials.password.toCharArray())) {
+//            UserIdPrincipal(credentials.name)
+//        } else null
+//            }
+//        }
     }
 
     install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {

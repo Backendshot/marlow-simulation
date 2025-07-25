@@ -2,6 +2,8 @@ package com.marlow.configuration
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import de.mkammerer.argon2.Argon2
+import de.mkammerer.argon2.Argon2Factory
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -46,3 +48,24 @@ fun Application.configureSecurity() {
 }
 @Serializable
 data class MySession(val count: Int = 0)
+
+class PasswordHasher(
+    private val iterations: Int = 3,
+    private val memoryKb: Int = 1 shl 16, // 64 MB
+    private val parallelism: Int = 1
+) {
+    // Create one Argon2 instance (thread‐safe entry point)
+    private val argon2: Argon2 = Argon2Factory.create()
+
+    /**
+     * Hashes the given plain‐text password.
+     * @return the encoded hash string, including parameters and salt.
+     */
+    fun hash(plain: CharArray): String {
+        // The returned string contains parameters, salt, and hash.
+        return argon2.hash(iterations, memoryKb, parallelism, plain)
+    }
+    fun verify(encoded: String, plain: CharArray): Boolean {
+        return argon2.verify(encoded, plain)
+    }
+}

@@ -15,7 +15,8 @@ import com.marlow.global.GlobalResponseData
 import com.marlow.todo.model.Todo
 import com.marlow.todo.model.TodoValidator
 import com.zaxxer.hikari.HikariDataSource
-
+import de.mkammerer.argon2.Argon2Factory
+import kotlinx.serialization.encodeToString
 
 fun Route.todoRouting(ds: HikariDataSource) {
 
@@ -46,6 +47,32 @@ fun Route.todoRouting(ds: HikariDataSource) {
                 call.respond(
                     HttpStatusCode.InternalServerError,
                     GlobalResponse(500, false, "Invalid JSON types: ${e.localizedMessage}")
+                )
+            }
+        }
+        post("/hash") {
+            try {
+                val input = call.receive<Map<String, String>>()
+                val password = input["password"]?.toCharArray()
+//                val element: CharArray = Json.encodeToString(password).toCharArray()
+                println("Char array flattened: ${password?.concatToString()}")
+                println("Password plaintext: $password")
+                val argon2 = Argon2Factory.create()
+                val hash = argon2.hash(1, 65536, 1, password)
+                println("Hashed password: $hash")
+
+                println(argon2.verify(hash, password))
+                call.respond(
+                    HttpStatusCode.OK, GlobalResponseData(
+                        200,
+                        true,
+                        "The following are equivalent:",
+                        mapOf("password" to input["password"], "password_array" to password.toString(), "hash" to hash)
+                    )
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage)
                 )
             }
         }
@@ -91,16 +118,22 @@ fun Route.todoRouting(ds: HikariDataSource) {
                 val todo = Json.decodeFromJsonElement<Todo>(element)
                 val resultMap = TodoController(ds).createTodo(todo)
                 if (resultMap.component2() == 0) {
-                    call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, "Todo was not added. Please try again."))
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        GlobalResponse(500, false, "Todo was not added. Please try again.")
+                    )
                 }
-                call.respond(HttpStatusCode.Created, GlobalResponse(201, true, "Todo with ID #${resultMap.component1()} has been added."))
+                call.respond(
+                    HttpStatusCode.Created,
+                    GlobalResponse(201, true, "Todo with ID #${resultMap.component1()} has been added.")
+                )
             } catch (e: SerializationException) {
                 call.respond(
                     HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON types: ${e.localizedMessage}")
                 )
             } catch (e: CannotTransformContentToTypeException) {
                 call.respond(
-                    HttpStatusCode.BadRequest, GlobalResponse(400, false, "Wrong input")
+                    HttpStatusCode.BadRequest, GlobalResponse(400, false, "Wrong input: ${e.localizedMessage}")
                 )
             } catch (e: Exception) {
                 call.respond(
