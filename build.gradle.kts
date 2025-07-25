@@ -11,9 +11,8 @@ version = "0.0.1"
 application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
-
 kotlin {
-    jvmToolchain(18) // you can try other versions here
+    jvmToolchain(18)
 }
 
 repositories {
@@ -45,4 +44,6 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
+    implementation("eu.bitwalker:UserAgentUtils:1.21")
+    implementation(kotlin("test"))
 }

@@ -2,38 +2,37 @@ package com.marlow.LoginSystem.controller
 
 import com.marlow.LoginSystem.model.LoginModel
 import com.marlow.LoginSystem.model.Validator
+import com.marlow.LoginSystem.model.LoginAuditResponse
 import com.marlow.LoginSystem.query.LoginQuery
 import com.marlow.LoginSystem.util.LoginJWT
 import com.marlow.LoginSystem.util.LoginSession
 import com.marlow.configuration.Config
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 object LoginController {
     val connection = Config().connect()
 
-    // for tommorrow create a function to get Brower info
-    // and pass it to the audit trail
-
-    suspend fun login(login: LoginModel): LoginModel? = withContext(Dispatchers.IO) {
+    suspend fun login(login: LoginModel, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
         val validator = Validator()
-        val sanitizeLogin = validator.sanitizeInput(login) 
+        val sanitizeLogin = validator.sanitizeInput(login)
         val validateLogin = validator.validateLoginInput(sanitizeLogin)
 
         if (validateLogin.isNotEmpty()) {
             throw IllegalArgumentException("Validation Errors: ${validateLogin.joinToString(", ")}")
         }
-        println("Sanitized and Validated Login Input: $sanitizeLogin")
 
-        connection.prepareStatement(LoginQuery.LOGIN_QUERY).use { stmt ->
-            stmt.setString(1, login.username)
-            stmt.setString(2, login.password)
-            val resultSet = stmt.executeQuery()
+        connection.prepareStatement(LoginQuery.LOGIN_QUERY).use { statement ->
+            statement.setString(1, login.username)
+            statement.setString(2, login.password)
+            val resultSet = statement.executeQuery()
             if (resultSet.next()) {
                 val userId = resultSet.getInt(login.id)
                 val jwtToken = LoginJWT.generateJWT(userId)
                 val sessionId = LoginSession.generatedSessionId()
-                
+
                 connection.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { updateStmt ->
                     updateStmt.setString(1, sessionId)
                     updateStmt.setString(2, jwtToken)
@@ -41,20 +40,29 @@ object LoginController {
                     updateStmt.executeUpdate()
                 }
 
-                connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt ->
+                val currentDateTime = LocalDateTime.now()
+                val formatter = DateTimeFormatter.ofPattern("-MM-dd-yyyy HH:mm:ss")
+                val formattedDateTime = currentDateTime.format(formatter)
+
+                val auditModel = connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt ->
                     auditStmt.setInt(1, userId)
-                    auditStmt.setString(2, System.currentTimeMillis().toString())
-                    auditStmt.setString(3, "Browser Info") 
-                    auditStmt.executeUpdate()
+                    auditStmt.setString(2, formattedDateTime)
+                    auditStmt.setString(3, browserInfo)
+                    auditStmt.executeQuery()
                 }
-                
-                return@withContext LoginModel(
+
+                val loginModel = LoginModel(
                     id = userId,
                     username = login.username,
                     password = login.password,
                     jwt_token = jwtToken,
                     active_session = sessionId,
                     active_session_deleted = false
+                )
+
+                val loginAuditResponse = LoginAuditResponse(
+                    login = loginModel,
+                    audit = auditModel
                 )
             }
         }

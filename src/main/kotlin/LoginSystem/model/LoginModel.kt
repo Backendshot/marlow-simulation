@@ -1,8 +1,7 @@
 package com.marlow.LoginSystem.model
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import java.sql.ResultSet
 
 @Serializable
 data class LoginModel(
@@ -18,9 +17,15 @@ data class LoginModel(
 @Serializable
 data class AuditModel(
     val id: Int,
-    val user_id: String,
+    val user_id: Int,
     val timestamp: String,
     val browser: String,
+)
+
+@Serializable
+data class LoginAuditResponse(
+    val login: LoginModel,
+    val audit: ResultSet?
 )
 
 
