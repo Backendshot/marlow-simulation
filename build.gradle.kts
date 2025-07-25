@@ -1,4 +1,3 @@
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
@@ -37,9 +36,12 @@ dependencies {
     implementation(libs.ktor.server.config.yaml)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
-    implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
-    implementation("io.ktor:ktor-client-core:2.3.4")
-    implementation("io.ktor:ktor-client-cio:2.3.4")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
-    implementation("com.zaxxer:HikariCP:6.3.2")
+    testImplementation(libs.ktor.server.tests)
+    implementation(libs.ktor.client.content.negotiation) //implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+    implementation(libs.ktor.client.core) //implementation("io.ktor:ktor-client-core:2.3.4")
+    implementation(libs.ktor.client.cio) //implementation("io.ktor:ktor-client-cio:2.3.4")
+    testImplementation(libs.mockk)
+    testImplementation(libs.assertj.core)
+    implementation(libs.dotenv.kotlin) //implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
+    implementation(libs.hikaricp) //implementation("com.zaxxer:HikariCP:6.3.2")
 }
