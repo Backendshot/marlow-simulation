@@ -1,5 +1,6 @@
 package com.marlow.LoginSystem.controller
 
+import com.marlow.LoginSystem.model.AuditModel
 import com.marlow.LoginSystem.model.LoginModel
 import com.marlow.LoginSystem.model.Validator
 import com.marlow.LoginSystem.model.LoginAuditResponse
@@ -15,7 +16,7 @@ import java.time.format.DateTimeFormatter
 object LoginController {
     val connection = Config().connect()
 
-    suspend fun login(login: LoginModel, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
+    suspend fun login(login: LoginModel, browserInfo: String): LoginAuditResponse? = withContext(Dispatchers.IO) {
         val validator = Validator()
         val sanitizeLogin = validator.sanitizeInput(login)
         val validateLogin = validator.validateLoginInput(sanitizeLogin)
@@ -29,7 +30,7 @@ object LoginController {
             statement.setString(2, login.password)
             val resultSet = statement.executeQuery()
             if (resultSet.next()) {
-                val userId = resultSet.getInt(login.id)
+                val userId = resultSet.getInt("id")
                 val jwtToken = LoginJWT.generateJWT(userId)
                 val sessionId = LoginSession.generatedSessionId()
 
@@ -41,14 +42,24 @@ object LoginController {
                 }
 
                 val currentDateTime = LocalDateTime.now()
-                val formatter = DateTimeFormatter.ofPattern("-MM-dd-yyyy HH:mm:ss")
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                 val formattedDateTime = currentDateTime.format(formatter)
 
                 val auditModel = connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt ->
                     auditStmt.setInt(1, userId)
                     auditStmt.setString(2, formattedDateTime)
                     auditStmt.setString(3, browserInfo)
-                    auditStmt.executeQuery()
+
+                    auditStmt.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            AuditModel(
+                                id = rs.getInt("id"),
+                                user_id = rs.getInt("user_id"),
+                                timestamp = rs.getString("timestamp"),
+                                browser = rs.getString("browser")
+                            )
+                        } else null
+                    }
                 }
 
                 val loginModel = LoginModel(
@@ -60,13 +71,25 @@ object LoginController {
                     active_session_deleted = false
                 )
 
-                val loginAuditResponse = LoginAuditResponse(
-                    login = loginModel,
-                    audit = auditModel
-                )
+                return@withContext LoginAuditResponse(login = loginModel, audit = auditModel)
             }
         }
         return@withContext null
+    }
+
+    suspend fun getAuditById(user_id: Int): AuditModel = withContext(Dispatchers.IO) {
+        val query = connection.prepareStatement(LoginQuery.GET_AUDIT_QUERY)
+        query.setInt(1, user_id)
+        val result = query.executeQuery()
+        if (result.next()) {
+            val id = result.getInt("id")
+            val userId = result.getInt("user_id")
+            val timestamp = result.getDate("timestamp").toString()
+            val browser = result.getString("browser")
+            return@withContext AuditModel(id, userId, timestamp, browser)
+        } else {
+            throw kotlin.Exception("Logged in History not found")
+        }
     }
 
     suspend fun logout(userId: Int): Boolean = withContext(Dispatchers.IO) {

@@ -6,10 +6,10 @@ import com.marlow.LoginSystem.util.LoginDecryption.aesDecrypt
 import com.marlow.LoginSystem.util.LoginDecryption.aesEncrypt
 import com.marlow.LoginSystem.util.LoginDecryption.generateAESKey
 import com.marlow.configuration.Config
-import com.marlow.todo.plugin.configureHTTP
-import com.marlow.todo.plugin.configureRouting
-import com.marlow.todo.plugin.configureSecurity
-import com.marlow.todo.plugin.configureSerialization
+import com.marlow.configuration.configureHTTP
+import com.marlow.configuration.configureRouting
+import com.marlow.configuration.configureSecurity
+import com.marlow.configuration.configureSerialization
 import com.marlow.todo.query.TodoQuery
 import io.ktor.client.HttpClient
 import io.ktor.server.application.*
@@ -19,7 +19,11 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
+<<<<<<< HEAD
 import kotlin.test.assertEquals
+=======
+import io.ktor.server.netty.EngineMain
+>>>>>>> 53d9edccfbf40cd1b94407e62e46439dbb976a79
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -35,6 +39,7 @@ val client = HttpClient(CIO) {
 }
 
 fun main(args: Array<String>) {
+<<<<<<< HEAD
     io.ktor.server.netty.EngineMain.main(args)
 //    val originalText = "Hello Kotlin AES Encryption!"
 //    val secretKey = generateAESKey(256)
@@ -46,16 +51,20 @@ fun main(args: Array<String>) {
 //    val decryptedText = String(decryptedData)
 //
 //    println("Decrypted Text: $decryptedText")
+=======
+    EngineMain.main(args)
+>>>>>>> 53d9edccfbf40cd1b94407e62e46439dbb976a79
 }
 
 fun Application.module() {
-    val connection = Config().connect()
-    val bearerTokenQuery = connection.prepareCall(TodoQuery.GET_BEARER_TOKEN)
-    val resultSet = bearerTokenQuery.executeQuery()
-    val bearerToken = if (resultSet.next()) {
-        resultSet.getString("bearer_token")
-    } else {
-        null
+//    val connection = Config().connect()
+    val ds = Config().getConnection()//.createDataSource()
+//    val todo = TodoController(ds)
+    val bearerToken = ds.connection.use { conn ->
+        conn.prepareCall(TodoQuery.GET_BEARER_TOKEN) //bearerTokenQuery
+            .executeQuery() //resultSet
+            .takeIf { it -> it.next() } //take the value if resultSet.next() is true
+            ?.getString("bearer_token") //use the value to get the bearer_token
     }
 
     install(Authentication) {
@@ -84,5 +93,5 @@ fun Application.module() {
     configureSecurity()
     configureHTTP()
 //    configureDatabases()
-    configureRouting()
+    configureRouting(ds)
 }

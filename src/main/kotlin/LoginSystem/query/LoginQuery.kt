@@ -7,6 +7,6 @@ class LoginQuery {
         const val UPDATE_SESSION_QUERY = "UPDATE tbl_credentials SET active_session = ?, jwt_token = ? WHERE id = ?"
         const val LOGOUT_SESSION_QUERY = "UPDATE tbl_credentials SET active_session_deleted = TRUE WHERE id = ?"
         const val INSERT_AUDIT_QUERY = "INSERT INTO audit_trail (user_id, timestamp, browser) VALUES (?, ?, ?)"
-        const val SELECT_AUDIT_QUERY = "SELECT * FROM audit_trail WHERE user_id = ? ORDER BY timestamp DESC LIMIT 10"
+        const val GET_AUDIT_QUERY = "SELECT * FROM audit_trail WHERE user_id = ? ORDER BY timestamp DESC LIMIT 10"
     }
 }

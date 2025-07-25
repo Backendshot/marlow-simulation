@@ -11,31 +11,34 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import com.marlow.global.GlobalResponse
+import com.marlow.global.GlobalResponseData
 import com.marlow.todo.model.Todo
 import com.marlow.todo.model.TodoValidator
+import com.zaxxer.hikari.HikariDataSource
 
 
-fun Route.todoRouting() {
+fun Route.todoRouting(ds: HikariDataSource) {
 
     route("/todos") {
         get {
-            val todos = TodoController().fetchTodos()
-            call.respond(Json.encodeToString(todos))
+            val todos = TodoController(ds).fetchTodos()
+            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todos))
         }
         get("/{id?}") {
             try {
                 val id: Int = call.parameters["id"]?.toIntOrNull() ?: return@get call.respondText(
                     "Missing id", status = HttpStatusCode.BadRequest
                 )
-                val todo = TodoController().fetchTodoById(id)
-                call.respond(Json.encodeToString(todo))
+                val todo = TodoController(ds).fetchTodoById(id)
+//                call.respond(Json.encodeToString(todo))
+                call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todo))
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.toString()))
             }
         }
         get("/import-data-todos") {
             try {
-                val todos = TodoController().importTodoData()
+                val todos = TodoController(ds).importTodoData()
                 call.respond(
                     HttpStatusCode.OK, GlobalResponse(200, true, "Successfully imported todo data with $todos rows")
                 )
@@ -49,8 +52,9 @@ fun Route.todoRouting() {
     }
     route("/api/v2/") {
         get("readall") {
-            val getTodos = TodoController().readAllTodos()
-            call.respond(Json.encodeToString(getTodos))
+            val getTodos = TodoController(ds).readAllTodos()
+//            call.respond(Json.encodeToString(getTodos))
+            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", getTodos))
         }
 
         get("read/{id?}") {
@@ -58,8 +62,9 @@ fun Route.todoRouting() {
                 val id: Int = call.parameters["id"]?.toIntOrNull() ?: return@get call.respondText(
                     "Missing id", status = HttpStatusCode.BadRequest
                 )
-                val getTodo = TodoController().readTodoById(id);
-                call.respond(Json.encodeToString(getTodo))
+                val getTodo = TodoController(ds).readTodoById(id);
+//                call.respond(Json.encodeToString(getTodo))
+                call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", getTodo))
             } catch (e: Exception) {
                 call.respond(
                     HttpStatusCode.BadRequest, GlobalResponse(404, false, "Todo not found: ${e.localizedMessage}")
@@ -84,7 +89,7 @@ fun Route.todoRouting() {
                 println("No validation errors")
 
                 val todo = Json.decodeFromJsonElement<Todo>(element)
-                val resultMap = TodoController().createTodo(todo)
+                val resultMap = TodoController(ds).createTodo(todo)
                 if (resultMap.component2() == 0) {
                     call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, "Todo was not added. Please try again."))
                 }
@@ -122,7 +127,7 @@ fun Route.todoRouting() {
                     )
                 }
                 val todoData = Json.decodeFromJsonElement<Todo>(obj)
-                val result = TodoController().updateTodo(id, todoData)
+                val result = TodoController(ds).updateTodo(id, todoData)
                 when (result) {
                     0 -> call.respond(
                         HttpStatusCode.InternalServerError,
@@ -144,7 +149,7 @@ fun Route.todoRouting() {
                     status = HttpStatusCode.BadRequest, GlobalResponse(400, false, "Missing id")
                 )
 
-                val checkValue = TodoController().deleteTodo(id)
+                val checkValue = TodoController(ds).deleteTodo(id)
 
                 if (checkValue < 1) return@delete call.respond(
                     HttpStatusCode.InternalServerError,

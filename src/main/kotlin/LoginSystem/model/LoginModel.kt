@@ -1,7 +1,6 @@
 package com.marlow.LoginSystem.model
 
 import kotlinx.serialization.Serializable
-import java.sql.ResultSet
 
 @Serializable
 data class LoginModel(
@@ -25,7 +24,7 @@ data class AuditModel(
 @Serializable
 data class LoginAuditResponse(
     val login: LoginModel,
-    val audit: ResultSet?
+    val audit: AuditModel?
 )
 
 

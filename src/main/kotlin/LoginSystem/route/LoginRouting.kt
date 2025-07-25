@@ -20,6 +20,9 @@ fun Route.LoginRouting() {
         post ("/"){
             try {
                 val loginData = call.receive<LoginModel>()
+                val userAgentHeader = call.request.headers["User-Agent"] ?: "Unknown"
+                val browserInfo = parseBrowser(userAgentHeader)
+                val loginResult = controller.login(loginRequest, browserInfo)
                 val errors = Validator().validateLoginInput(loginData)
                 if (errors.isNotEmpty()) {
                     call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, errors.joinToString(", ")))
@@ -49,6 +52,18 @@ fun Route.LoginRouting() {
                 } else {
                     call.respond(HttpStatusCode.NotFound, GlobalResponse(404, false, "User session not found"))
                 }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage))
+            }
+        }
+
+        get("/audit/{userId}") {
+            try {
+                val userId = call.parameters["userId"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
+                val auditData = LoginController.getAuditById(userId)
+                call.respond(HttpStatusCode.OK, auditData)
+            } catch (e: IllegalArgumentException) {
+                call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, e.message ?: "Invalid request"))
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage))
             }

@@ -40,10 +40,14 @@ dependencies {
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+<<<<<<< HEAD
     //Login Dependencies
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("eu.bitwalker:UserAgentUtils:1.21")
     implementation(kotlin("test"))
+=======
+    implementation("com.zaxxer:HikariCP:6.3.2")
+>>>>>>> 53d9edccfbf40cd1b94407e62e46439dbb976a79
 }
