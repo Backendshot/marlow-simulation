@@ -20,12 +20,7 @@ import kotlin.collections.map
 import kotlin.text.isEmpty
 import kotlin.use
 
-<<<<<<< HEAD
-
-class TodoController {
-=======
 class TodoController(private val ds: HikariDataSource) {
->>>>>>> 53d9edccfbf40cd1b94407e62e46439dbb976a79
 
 //    val connection = Config().createDataSource() //.connect()
 
@@ -222,5 +217,4 @@ class TodoController(private val ds: HikariDataSource) {
             throw e
         }
     }
-
 }

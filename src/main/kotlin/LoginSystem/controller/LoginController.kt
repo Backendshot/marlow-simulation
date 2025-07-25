@@ -11,7 +11,9 @@ import com.marlow.configuration.Config
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
+import java.sql.Timestamp
 import java.time.format.DateTimeFormatter
+import kotlin.Exception
 
 object LoginController {
     val connection = Config().connect()
@@ -40,14 +42,11 @@ object LoginController {
                     updateStmt.setInt(3, userId)
                     updateStmt.executeUpdate()
                 }
-
-                val currentDateTime = LocalDateTime.now()
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                val formattedDateTime = currentDateTime.format(formatter)
 
                 val auditModel = connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt ->
                     auditStmt.setInt(1, userId)
-                    auditStmt.setString(2, formattedDateTime)
+                    auditStmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
                     auditStmt.setString(3, browserInfo)
 
                     auditStmt.executeQuery().use { rs ->
@@ -55,12 +54,15 @@ object LoginController {
                             AuditModel(
                                 id = rs.getInt("id"),
                                 user_id = rs.getInt("user_id"),
-                                timestamp = rs.getString("timestamp"),
+                                timestamp = rs.getTimestamp("timestamp").toLocalDateTime().format(formatter),
                                 browser = rs.getString("browser")
                             )
-                        } else null
+                        } else {
+                            throw kotlin.Exception("Audit insert failed; no result returned.")
+                        }
                     }
                 }
+
 
                 val loginModel = LoginModel(
                     id = userId,
@@ -71,26 +73,44 @@ object LoginController {
                     active_session_deleted = false
                 )
 
-                return@withContext LoginAuditResponse(login = loginModel, audit = auditModel)
+                return@withContext LoginAuditResponse(loginModel)
             }
         }
         return@withContext null
     }
 
-    suspend fun getAuditById(user_id: Int): AuditModel = withContext(Dispatchers.IO) {
-        val query = connection.prepareStatement(LoginQuery.GET_AUDIT_QUERY)
+    suspend fun viewAllAuditById(user_id: Int): MutableList<AuditModel> = withContext(Dispatchers.IO) {
+        val auditList = mutableListOf<AuditModel>()
+        val query = connection.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY)
         query.setInt(1, user_id)
         val result = query.executeQuery()
-        if (result.next()) {
+        while (result.next()) {
             val id = result.getInt("id")
             val userId = result.getInt("user_id")
             val timestamp = result.getDate("timestamp").toString()
             val browser = result.getString("browser")
-            return@withContext AuditModel(id, userId, timestamp, browser)
-        } else {
-            throw kotlin.Exception("Logged in History not found")
+            auditList.add(AuditModel(id, userId, timestamp, browser))
         }
+        return@withContext auditList
     }
+
+    // suspend fun getAuditById(user_id: Int): AuditModel = withContext(Dispatchers.IO) {
+    //     val query = connection.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY)
+    //     if (user_id <= 0) {
+    //         throw IllegalArgumentException("Invalid User ID")
+    //     }
+    //     query.setInt(1, user_id)
+    //     val result = query.executeQuery()
+    //     if (result.next()) {
+    //         val id = result.getInt("id")
+    //         val userId = result.getInt("user_id")
+    //         val timestamp = result.getDate("timestamp").toString()
+    //         val browser = result.getString("browser")
+    //         return@withContext AuditModel(id, userId, timestamp, browser)
+    //     } else {
+    //         throw kotlin.Exception("Logged in History not found")
+    //     }
+    // }
 
     suspend fun logout(userId: Int): Boolean = withContext(Dispatchers.IO) {
         connection.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->

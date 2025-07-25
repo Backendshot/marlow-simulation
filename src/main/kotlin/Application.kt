@@ -19,11 +19,11 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
-<<<<<<< HEAD
+
 import kotlin.test.assertEquals
-=======
+
 import io.ktor.server.netty.EngineMain
->>>>>>> 53d9edccfbf40cd1b94407e62e46439dbb976a79
+
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -39,21 +39,7 @@ val client = HttpClient(CIO) {
 }
 
 fun main(args: Array<String>) {
-<<<<<<< HEAD
-    io.ktor.server.netty.EngineMain.main(args)
-//    val originalText = "Hello Kotlin AES Encryption!"
-//    val secretKey = generateAESKey(256)
-//
-//    val encryptedData = aesEncrypt(originalText.toByteArray(), secretKey)
-//
-//    println("Encrypted Data: ${encryptedData.joinToString(", ")}")
-//    val decryptedData = aesDecrypt(encryptedData, secretKey)
-//    val decryptedText = String(decryptedData)
-//
-//    println("Decrypted Text: $decryptedText")
-=======
     EngineMain.main(args)
->>>>>>> 53d9edccfbf40cd1b94407e62e46439dbb976a79
 }
 
 fun Application.module() {

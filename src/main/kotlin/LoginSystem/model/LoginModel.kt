@@ -23,8 +23,7 @@ data class AuditModel(
 
 @Serializable
 data class LoginAuditResponse(
-    val login: LoginModel,
-    val audit: AuditModel?
+    val login: LoginModel
 )
 
 
@@ -45,8 +44,7 @@ class Validator {
     fun sanitizeInput(data: Any): Any {
         return when (data) {
             is LoginModel -> data.copy(
-                username = data.username.trim(),
-                password = data.password.trim()
+                username = data.username.trim()
             )
             else -> data
         }
