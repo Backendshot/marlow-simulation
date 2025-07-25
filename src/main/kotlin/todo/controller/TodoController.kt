@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import com.marlow.todo.model.Todo
 import com.marlow.todo.model.TodoValidator
+import com.zaxxer.hikari.HikariDataSource
 import java.net.URL
 import java.sql.Types
 import kotlin.collections.find
@@ -19,17 +20,20 @@ import kotlin.collections.map
 import kotlin.text.isEmpty
 import kotlin.use
 
-class TodoController {
+class TodoController(private val ds: HikariDataSource) {
 
-    val connection = Config().connect()
+//    val connection = Config().createDataSource() //.connect()
 
     suspend fun createTodo(todo: Todo): Pair<Int, Int> = withContext(Dispatchers.IO) {
         // Check duplicates
-        connection.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO).use { duplicateStmt ->
-            duplicateStmt.setInt(1, todo.id)
-            duplicateStmt.executeQuery().use { rs ->
-                rs.next().takeIf { !rs.getBoolean(1) } //takeIf will null the value if the returned value is true (there *is* a duplicate id)
-                    ?: throw kotlin.Exception("Todo at id #${todo.id} already exists") //a null value results in an Exception being thrown
+        ds.connection.use { conn ->
+            conn.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO).use { duplicateStmt ->
+                duplicateStmt.setInt(1, todo.id)
+                duplicateStmt.executeQuery().use { rs ->
+                    rs.next()
+                        .takeIf { !rs.getBoolean(1) } //takeIf will null the value if the returned value is true (there *is* a duplicate id)
+                        ?: throw kotlin.Exception("Todo at id #${todo.id} already exists") //a null value results in an Exception being thrown
+                }
             }
         }
 
@@ -46,16 +50,18 @@ class TodoController {
         }
 
         var count: Int
-        val rowsInserted = connection.prepareStatement(TodoQuery.INSERT_TODO).use { stmt ->
-            stmt.setInt(1, sanitizedTodo.userId)
-            stmt.setInt(2, sanitizedTodo.id)
-            stmt.setString(3, sanitizedTodo.title)
-            stmt.setBoolean(4, sanitizedTodo.completed)
-            stmt.execute()
-            count = stmt.updateCount
+        val rowsInserted = ds.connection.use { conn ->
+            conn.prepareStatement(TodoQuery.INSERT_TODO).use { stmt ->
+                stmt.setInt(1, sanitizedTodo.userId)
+                stmt.setInt(2, sanitizedTodo.id)
+                stmt.setString(3, sanitizedTodo.title)
+                stmt.setBoolean(4, sanitizedTodo.completed)
+                stmt.execute()
+                count = stmt.updateCount
 
-            println(count) //currently returns -1 on successful update, but otherwise works with current logic
+                println(count) //currently returns -1 on successful update, but otherwise works with current logic
 
+            }
         }
 
         return@withContext todo.id to count
@@ -63,7 +69,7 @@ class TodoController {
 
     suspend fun readAllTodos(): MutableList<Todo> = withContext(Dispatchers.IO) {
         val data = mutableListOf<Todo>()
-        val query = connection.prepareStatement(TodoQuery.GET_ALL_TODOS)
+        val query = ds.connection.prepareStatement(TodoQuery.GET_ALL_TODOS)
         val result = query.executeQuery()
         while (result.next()) {
             val userId: Int = result.getInt("user_id")
@@ -76,7 +82,7 @@ class TodoController {
     }
 
     suspend fun readTodoById(id: Int): Todo = withContext(Dispatchers.IO) {
-        val query = connection.prepareStatement(TodoQuery.GET_TODO_BY_ID)
+        val query = ds.connection.prepareStatement(TodoQuery.GET_TODO_BY_ID)
         query.setInt(1, id)
         val result = query.executeQuery()
         if (result.next()) {
@@ -105,7 +111,7 @@ class TodoController {
             throw kotlin.Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
         }
 
-        val result = connection.prepareCall(TodoQuery.UPDATE_TODO).use { stmt ->
+        val result = ds.connection.prepareCall(TodoQuery.UPDATE_TODO).use { stmt ->
             stmt.setInt(1, sanitizedTodo.userId)
             stmt.setInt(2, id)
             stmt.setString(3, sanitizedTodo.title)
@@ -120,7 +126,7 @@ class TodoController {
     }
 
     suspend fun deleteTodo(id: Int): Int = withContext(Dispatchers.IO) {
-        val result = connection.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
+        val result = ds.connection.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
             stmt.setInt(1, id)
             stmt.registerOutParameter(2, Types.INTEGER)
 
@@ -192,7 +198,7 @@ class TodoController {
             }
 
             var insertCount = 0
-            connection.use { conn ->
+            ds.connection.use { conn ->
                 conn.prepareCall(TodoQuery.INSERT_TODO).use { stmt ->
                     for (todo in sanitizedTodos) {
                         stmt.setInt(1, todo.userId)
