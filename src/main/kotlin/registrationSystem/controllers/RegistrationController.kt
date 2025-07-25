@@ -6,18 +6,52 @@ import com.marlow.registrationSystem.dto.RegistrationRequest
 import com.marlow.registrationSystem.models.CredentialsModel
 import com.marlow.registrationSystem.models.InformationModel
 import com.marlow.registrationSystem.queries.UserQuery
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.http.content.streamProvider
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import java.sql.Connection
 import java.time.LocalDate
-import org.mindrot.jbcrypt.BCrypt
+import de.mkammerer.argon2.Argon2Factory
+import java.io.File
+import java.util.UUID
 
 class RegistrationController {
     val connection = Config().connect()
     suspend fun register(call: ApplicationCall): RegistrationResult {
         return try {
-            val input = call.receive<RegistrationRequest>()
-            val now   = LocalDate.now()
+            val multipart = call.receiveMultipart()
+            val formFields = mutableMapOf<String, String>()
+            var imageFileName: String? = null
+            val now = LocalDate.now()
+
+            multipart.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        formFields[part.name.orEmpty()] = part.value
+                    }
+                    is PartData.FileItem -> {
+                        if (part.name == "image") {
+                            imageFileName = saveImage(part)
+                        }
+                    }
+                    else -> {}
+                }
+                part.dispose()
+            }
+
+            val input = RegistrationRequest(
+                username   = formFields["username"] ?: "",
+                firstName  = formFields["firstName"] ?: "",
+                middleName = formFields["middleName"],
+                lastName   = formFields["lastName"] ?: "",
+                roleType   = formFields["roleType"] ?: "",
+                email      = formFields["email"] ?: "",
+                birthday   = formFields["birthday"],
+                password   = formFields["password"] ?: "",
+                image      = imageFileName
+            )
 
             val information = InformationModel(
                 username   = input.username,
@@ -28,10 +62,10 @@ class RegistrationController {
                 email      = input.email,
                 birthday   = input.birthday?.let { LocalDate.parse(it) },
                 createdAt  = now,
-                updatedAt  = now
+                updatedAt  = now,
+                image      = imageFileName
             ).sanitized()
 
-            // Validate information
             val infoErrors = information.validate()
             if (infoErrors.isNotEmpty()) {
                 return RegistrationResult.ValidationError("Information validation failed.")
@@ -41,7 +75,6 @@ class RegistrationController {
                 return RegistrationResult.ValidationError("Password must be at least 8 characters.")
             }
 
-            // Check if username exists
             val checkStmt = connection.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS)
             checkStmt.setString(1, information.username)
             val result = checkStmt.executeQuery()
@@ -49,7 +82,6 @@ class RegistrationController {
                 return RegistrationResult.Conflict("Username already exists.")
             }
 
-            // Insert information
             val insertInfo = connection.prepareCall(UserQuery.INSERT_INFORMATION)
             insertInfo.setString(1, information.username)
             insertInfo.setString(2, information.firstName)
@@ -60,15 +92,16 @@ class RegistrationController {
             insertInfo.setObject(7, information.createdAt)
             insertInfo.setObject(8, information.updatedAt)
             insertInfo.setString(9, information.roleType)
+            insertInfo.setString(10, information.image)
             insertInfo.execute()
 
             val userId = getUserIdByUsername(connection, information.username)
                 ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
 
             val credentials = CredentialsModel(
-                userId = userId,
-                username = information.username,
-                password = hashPassword(input.password),
+                userId    = userId,
+                username  = information.username,
+                password  = hashPassword(input.password),
                 createdAt = now,
                 updatedAt = now
             ).sanitized()
@@ -95,13 +128,36 @@ class RegistrationController {
     }
 
     private fun getUserIdByUsername(connection: Connection, username: String): Int? {
-        val stmt = connection.prepareStatement("SELECT id FROM tbl_information WHERE username = ?")
-        stmt.setString(1, username)
-        val result = stmt.executeQuery()
+        val userId = connection.prepareCall(UserQuery.GET_USER_ID)
+        userId.setString(1, username)
+        val result = userId.executeQuery()
         return if (result.next()) result.getInt("id") else null
     }
 
     private fun hashPassword(password: String): String {
-        return BCrypt.hashpw(password, BCrypt.gensalt())
+        val hasher = Argon2Factory.create()
+
+        return hasher.hash(2, 65536, 1, password.toCharArray())
+    }
+
+    private fun saveImage(part: PartData.FileItem): String {
+        val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
+
+        val originalName      = part.originalFileName ?: ""
+        val extension         = File(originalName).extension.lowercase()
+
+        if (extension !in allowedExtensions) {
+            throw IllegalArgumentException("Invalid image type: .$extension is not allowed.")
+        }
+
+        val fileName = UUID.randomUUID().toString() + "." + extension
+        val filePath = "image_uploads/$fileName"
+
+        File(filePath).apply {
+            parentFile.mkdirs()
+            outputStream().use { part.streamProvider().copyTo(it) }
+        }
+
+        return fileName
     }
 }

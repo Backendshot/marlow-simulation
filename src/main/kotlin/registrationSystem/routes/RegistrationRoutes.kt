@@ -10,6 +10,8 @@ import io.ktor.server.routing.route
 fun Route.registrationRouting() {
     route("/api") {
         post ("/register") {
+            // TODO: Add a logger here
+
             val result = RegistrationController().register(call)
 
             when (result) {

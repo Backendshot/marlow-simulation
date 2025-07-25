@@ -11,5 +11,6 @@ data class RegistrationRequest(
     val lastName: String? = null,
     val email: String,
     val password: String,
-    val birthday: String? = null
+    val birthday: String? = null,
+    val image: String? = null
 )
