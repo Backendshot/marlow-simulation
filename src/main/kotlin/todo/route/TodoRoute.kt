@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import com.marlow.global.GlobalResponse
+import com.marlow.global.GlobalResponseData
 import com.marlow.todo.model.Todo
 import com.marlow.todo.model.TodoValidator
 import com.zaxxer.hikari.HikariDataSource
@@ -21,7 +22,7 @@ fun Route.todoRouting(ds: HikariDataSource) {
     route("/todos") {
         get {
             val todos = TodoController(ds).fetchTodos()
-            call.respond(Json.encodeToString(todos))
+            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todos))
         }
         get("/{id?}") {
             try {
@@ -29,7 +30,8 @@ fun Route.todoRouting(ds: HikariDataSource) {
                     "Missing id", status = HttpStatusCode.BadRequest
                 )
                 val todo = TodoController(ds).fetchTodoById(id)
-                call.respond(Json.encodeToString(todo))
+//                call.respond(Json.encodeToString(todo))
+                call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todo))
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.toString()))
             }
@@ -51,7 +53,8 @@ fun Route.todoRouting(ds: HikariDataSource) {
     route("/api/v2/") {
         get("readall") {
             val getTodos = TodoController(ds).readAllTodos()
-            call.respond(Json.encodeToString(getTodos))
+//            call.respond(Json.encodeToString(getTodos))
+            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", getTodos))
         }
 
         get("read/{id?}") {
@@ -60,7 +63,8 @@ fun Route.todoRouting(ds: HikariDataSource) {
                     "Missing id", status = HttpStatusCode.BadRequest
                 )
                 val getTodo = TodoController(ds).readTodoById(id);
-                call.respond(Json.encodeToString(getTodo))
+//                call.respond(Json.encodeToString(getTodo))
+                call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", getTodo))
             } catch (e: Exception) {
                 call.respond(
                     HttpStatusCode.BadRequest, GlobalResponse(404, false, "Todo not found: ${e.localizedMessage}")
