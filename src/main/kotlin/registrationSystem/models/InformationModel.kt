@@ -20,7 +20,7 @@ data class InformationModel(
     @Contextual val updatedAt: LocalDate,
 
     val image: String? = null,
-    val roleType: String = "USER"
+    val roleType: String
 ) {
     init {
         require(username.isNotBlank()) { "Username must not be blank" }
@@ -36,7 +36,7 @@ data class InformationModel(
         lastName   = lastName?.trim()?.sanitizeInput(),
         email      = email.trim().sanitizeEmail(),
         image      = image?.trim()?.sanitizeInput(),
-        roleType   = roleType.trim().uppercase()
+        roleType   = roleType.trim().sanitizeRole()
     )
 
     fun validate(): List<String> {

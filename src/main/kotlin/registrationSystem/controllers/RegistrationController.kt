@@ -10,6 +10,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import java.sql.Connection
 import java.time.LocalDate
+import org.mindrot.jbcrypt.BCrypt
 
 class RegistrationController {
     val connection = Config().connect()
@@ -23,6 +24,7 @@ class RegistrationController {
                 firstName  = input.firstName,
                 middleName = input.middleName,
                 lastName   = input.lastName,
+                roleType   = input.roleType,
                 email      = input.email,
                 birthday   = input.birthday?.let { LocalDate.parse(it) },
                 createdAt  = now,
@@ -100,7 +102,6 @@ class RegistrationController {
     }
 
     private fun hashPassword(password: String): String {
-        // TODO : Replace this with BCrypt
-        return password.reversed()
+        return BCrypt.hashpw(password, BCrypt.gensalt())
     }
 }

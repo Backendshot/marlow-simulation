@@ -15,3 +15,14 @@ fun String.sanitizeInput(): String {
 fun String.sanitizeEmail(): String {
     return this.trim().lowercase()
 }
+
+fun String.sanitizeRole(): String {
+    val sanitized    = this.trim().uppercase()
+    val allowedRoles = setOf("USER", "ADMIN")
+
+    if (sanitized !in allowedRoles) {
+        throw IllegalArgumentException("Invalid role: $sanitized. Only 'USER' and 'ADMIN' are allowed.")
+    }
+
+    return sanitized
+}
