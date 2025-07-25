@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.sql.Timestamp
 import java.time.format.DateTimeFormatter
-import kotlin.Exception
 
 object LoginController {
     val connection = Config().connect()
@@ -94,24 +93,6 @@ object LoginController {
         return@withContext auditList
     }
 
-    // suspend fun getAuditById(user_id: Int): AuditModel = withContext(Dispatchers.IO) {
-    //     val query = connection.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY)
-    //     if (user_id <= 0) {
-    //         throw IllegalArgumentException("Invalid User ID")
-    //     }
-    //     query.setInt(1, user_id)
-    //     val result = query.executeQuery()
-    //     if (result.next()) {
-    //         val id = result.getInt("id")
-    //         val userId = result.getInt("user_id")
-    //         val timestamp = result.getDate("timestamp").toString()
-    //         val browser = result.getString("browser")
-    //         return@withContext AuditModel(id, userId, timestamp, browser)
-    //     } else {
-    //         throw kotlin.Exception("Logged in History not found")
-    //     }
-    // }
-
     suspend fun logout(userId: Int): Boolean = withContext(Dispatchers.IO) {
         connection.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
             stmt.setInt(1, userId)
@@ -119,5 +100,4 @@ object LoginController {
             return@withContext rowsUpdated > 0
         }
     }
-
 }

@@ -58,15 +58,6 @@ fun Route.LoginRouting() {
             }
         }
 
-//        get ("/audit") {
-//            try {
-//                val auditData = LoginController.viewAllAudit()
-//                call.respond(HttpStatusCode.OK, auditData)
-//            } catch (e: Exception) {
-//                call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage))
-//            }
-//        }
-
         get ("/audit/{userId}") {
             try {
                 val userId = call.parameters["userId"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
