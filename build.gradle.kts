@@ -43,4 +43,5 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("de.mkammerer:argon2-jvm:2.11")
+    implementation("com.zaxxer:HikariCP:6.3.2")
 }

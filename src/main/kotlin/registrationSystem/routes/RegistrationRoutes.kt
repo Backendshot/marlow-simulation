@@ -1,13 +1,14 @@
 import com.marlow.global.GlobalResponse
 import com.marlow.global.RegistrationResult
 import com.marlow.registrationSystem.controllers.RegistrationController
+import com.zaxxer.hikari.HikariDataSource
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 
-fun Route.registrationRouting() {
+fun Route.registrationRouting(ds: HikariDataSource) {
     route("/api") {
         post ("/register") {
             // TODO: Add a logger here
