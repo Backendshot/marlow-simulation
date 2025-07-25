@@ -12,8 +12,8 @@ fun Application.configureRouting(ds: HikariDataSource) {
     routing {
         swaggerUI("/swagger","src/main/kotlin/todo/documentation/documentation.yaml")
         authenticate("auth-bearer") {
-            LoginRouting()
             todoRouting(ds)
         }
+        LoginRouting(ds)
     }
 }
