@@ -217,5 +217,4 @@ class TodoController(private val ds: HikariDataSource) {
             throw e
         }
     }
-
 }
