@@ -13,7 +13,7 @@ fun Route.registrationRouting(ds: HikariDataSource) {
         post ("/register") {
             // TODO: Add a logger here
 
-            val result = RegistrationController().register(call)
+            val result = RegistrationController(ds).register(call)
 
             when (result) {
                 is RegistrationResult.Success -> {

@@ -6,6 +6,8 @@ import com.marlow.registrationSystem.dto.RegistrationRequest
 import com.marlow.registrationSystem.models.CredentialsModel
 import com.marlow.registrationSystem.models.InformationModel
 import com.marlow.registrationSystem.queries.UserQuery
+import com.marlow.todo.query.TodoQuery
+import com.zaxxer.hikari.HikariDataSource
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
@@ -17,8 +19,7 @@ import de.mkammerer.argon2.Argon2Factory
 import java.io.File
 import java.util.UUID
 
-class RegistrationController {
-    val connection = Config().connect()
+class RegistrationController (private val ds: HikariDataSource) {
     suspend fun register(call: ApplicationCall): RegistrationResult {
         return try {
             val multipart = call.receiveMultipart()
@@ -75,14 +76,14 @@ class RegistrationController {
                 return RegistrationResult.ValidationError("Password must be at least 8 characters.")
             }
 
-            val checkStmt = connection.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS)
+            val checkStmt = ds.connection.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS)
             checkStmt.setString(1, information.username)
             val result = checkStmt.executeQuery()
             if (result.next() && result.getInt("count") > 0) {
                 return RegistrationResult.Conflict("Username already exists.")
             }
 
-            val insertInfo = connection.prepareCall(UserQuery.INSERT_INFORMATION)
+            val insertInfo = ds.connection.prepareCall(UserQuery.INSERT_INFORMATION)
             insertInfo.setString(1, information.username)
             insertInfo.setString(2, information.firstName)
             insertInfo.setString(3, information.middleName)
@@ -95,7 +96,7 @@ class RegistrationController {
             insertInfo.setString(10, information.image)
             insertInfo.execute()
 
-            val userId = getUserIdByUsername(connection, information.username)
+            val userId = getUserIdByUsername(ds.connection, information.username)
                 ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
 
             val credentials = CredentialsModel(
@@ -111,7 +112,7 @@ class RegistrationController {
                 return RegistrationResult.ValidationError("Credentials validation failed.")
             }
 
-            val insertCred = connection.prepareCall(UserQuery.INSERT_CREDENTIALS)
+            val insertCred = ds.connection.prepareCall(UserQuery.INSERT_CREDENTIALS)
             insertCred.setInt(1, credentials.userId)
             insertCred.setString(2, credentials.username)
             insertCred.setString(3, credentials.password)
