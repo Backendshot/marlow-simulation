@@ -1,10 +1,5 @@
 package com.marlow
 
-import com.marlow.LoginSystem.util.LoginAudit
-import com.marlow.LoginSystem.util.LoginDecryption
-import com.marlow.LoginSystem.util.LoginDecryption.aesDecrypt
-import com.marlow.LoginSystem.util.LoginDecryption.aesEncrypt
-import com.marlow.LoginSystem.util.LoginDecryption.generateAESKey
 import com.marlow.configuration.Config
 import com.marlow.configuration.configureHTTP
 import com.marlow.configuration.configureRouting
@@ -19,19 +14,17 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
-
 import kotlin.test.assertEquals
 
 import io.ktor.server.netty.EngineMain
-
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
         json(
             Json {
-                prettyPrint = true
+                prettyPrint       = true
                 ignoreUnknownKeys = false
-                isLenient = false
+                isLenient         = false
                 coerceInputValues = false
             },
         )
@@ -43,14 +36,12 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-//    val connection = Config().connect()
-    val ds = Config().getConnection()//.createDataSource()
-//    val todo = TodoController(ds)
+    val ds = Config().getConnection()
     val bearerToken = ds.connection.use { conn ->
-        conn.prepareCall(TodoQuery.GET_BEARER_TOKEN) //bearerTokenQuery
-            .executeQuery() //resultSet
-            .takeIf { it -> it.next() } //take the value if resultSet.next() is true
-            ?.getString("bearer_token") //use the value to get the bearer_token
+        conn.prepareCall(TodoQuery.GET_BEARER_TOKEN)
+            .executeQuery()
+            .takeIf { it -> it.next() }
+            ?.getString("bearer_token")
     }
 
     install(Authentication) {

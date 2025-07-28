@@ -21,21 +21,13 @@ fun Route.LoginRouting(ds: HikariDataSource) {
         post ("/login"){
             try {
                 val loginData = call.receive<LoginModel>()
-                val validator = Validator()
-                val sanitizedData = validator.sanitizeInput(loginData)
-                val errors = validator.validateLoginInput(sanitizedData)
                 val browserInfo = LoginAudit().parseBrowser(call.request.headers["User-Agent"] ?: "Unknown")
 
-                if (errors.isNotEmpty()) {
-                    call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, errors.joinToString(", ")))
-                    return@post
-                }
-
-                val response = LoginController(ds).login(sanitizedData as LoginModel, browserInfo)
+                val response = LoginController(ds).login(loginData, browserInfo)
                 if (response != null) {
                     call.respond(HttpStatusCode.OK, response)
                 } else {
-                    call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid Username or Password"))
+                    call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password"))
                 }
             } catch (e: SerializationException) {
                 call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON format"))

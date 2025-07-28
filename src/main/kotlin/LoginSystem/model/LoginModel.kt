@@ -21,12 +21,6 @@ data class AuditModel(
     val browser: String,
 )
 
-@Serializable
-data class LoginAuditResponse(
-    val login: LoginModel
-)
-
-
 class Validator {
     fun <T> validateLoginInput(data: T): List<String>{
     val errors = mutableListOf<String>()
