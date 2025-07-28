@@ -18,20 +18,19 @@ import kotlinx.serialization.SerializationException
 fun Route.LoginRouting(ds: HikariDataSource) {
 
     route("/user") {
-        post ("/login"){
+        post("/login") {
             try {
                 val loginData = call.receive<LoginModel>()
                 val browserInfo = LoginAudit().parseBrowser(call.request.headers["User-Agent"] ?: "Unknown")
 
-                val response = LoginController(ds).login(loginData, browserInfo)
-                if (response != null) {
-                    call.respond(HttpStatusCode.OK, response)
-                } else {
-                    call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password"))
-                }
+                val response = LoginController(ds).login(loginData, browserInfo) ?: call.respond(
+                    HttpStatusCode.Unauthorized,
+                    GlobalResponse(401, false, "Invalid username or password")
+                )
+                call.respond(HttpStatusCode.OK, response)
             } catch (e: SerializationException) {
                 call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON format"))
-            }  catch (e: IllegalStateException) {
+            } catch (e: IllegalStateException) {
                 call.respond(HttpStatusCode.BadRequest, GlobalResponse(403, false, e.localizedMessage))
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage))
@@ -53,9 +52,10 @@ fun Route.LoginRouting(ds: HikariDataSource) {
             }
         }
 
-        get ("/audit/{userId}") {
+        get("/audit/{userId}") {
             try {
-                val userId = call.parameters["userId"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
+                val userId =
+                    call.parameters["userId"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
                 val auditData = LoginController(ds).viewAllAuditById(userId)
                 call.respond(HttpStatusCode.OK, auditData)
             } catch (e: IllegalArgumentException) {
