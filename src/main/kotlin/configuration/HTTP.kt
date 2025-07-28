@@ -14,13 +14,14 @@ fun Application.configureHTTP() {
         allowMethod(HttpMethod.Delete)
         allowMethod(HttpMethod.Patch)
         allowHeader(HttpHeaders.Authorization)
-        allowHeader("MyCustomHeader")
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader("X-Requested-With")
         anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
     }
-    routing {
-        openAPI(path = "openapi")
-    }
-    routing {
-        swaggerUI(path = "openapi")
-    }
+//    routing {
+//        openAPI(path = "openapi")
+//    }
+//    routing {
+//        swaggerUI(path = "openapi")
+//    }
 }
