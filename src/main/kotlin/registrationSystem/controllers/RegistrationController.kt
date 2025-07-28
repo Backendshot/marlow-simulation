@@ -1,6 +1,7 @@
 package com.marlow.registrationSystem.controllers
 
 import com.marlow.configuration.Config
+import com.marlow.global.GlobalMethods
 import com.marlow.global.RegistrationResult
 import com.marlow.registrationSystem.dto.RegistrationRequest
 import com.marlow.registrationSystem.models.CredentialsModel
@@ -22,10 +23,11 @@ import java.util.UUID
 class RegistrationController (private val ds: HikariDataSource) {
     suspend fun register(call: ApplicationCall): RegistrationResult {
         return try {
-            val multipart = call.receiveMultipart()
+            val methods    = GlobalMethods()
+            val multipart  = call.receiveMultipart()
             val formFields = mutableMapOf<String, String>()
+            val now        = LocalDate.now()
             var imageFileName: String? = null
-            val now = LocalDate.now()
 
             multipart.forEachPart { part ->
                 when (part) {
@@ -34,7 +36,7 @@ class RegistrationController (private val ds: HikariDataSource) {
                     }
                     is PartData.FileItem -> {
                         if (part.name == "image") {
-                            imageFileName = saveImage(part)
+                            imageFileName = methods.saveImage(part)
                         }
                     }
                     else -> {}
@@ -96,13 +98,13 @@ class RegistrationController (private val ds: HikariDataSource) {
             insertInfo.setString(10, information.image)
             insertInfo.execute()
 
-            val userId = getUserIdByUsername(ds.connection, information.username)
+            val userId = methods.getUserIdByUsername(ds.connection, information.username)
                 ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
 
             val credentials = CredentialsModel(
                 userId    = userId,
                 username  = information.username,
-                password  = hashPassword(input.password),
+                password  = methods.hashPassword(input.password),
                 createdAt = now,
                 updatedAt = now
             ).sanitized()
@@ -122,43 +124,25 @@ class RegistrationController (private val ds: HikariDataSource) {
             insertCred.setObject(7, credentials.updatedAt)
             insertCred.execute()
 
+            val accessToken = methods.getAccessToken()
+            methods.sendEmail(
+                recipient = information.email,
+                subject   = "Welcome to our app, ${information.firstName}!",
+                body      = """
+                     Hello ${information.firstName},
+                        Your registration was successful. Welcome aboard!
+                        Regards,  
+                        The Team
+                """.trimIndent(),
+                accessToken = accessToken
+            )
+
+            // TODO: Test the email sending
+            // TODO: Add saving inside the tbl_email_sending table
+
             RegistrationResult.Success("User registered successfully.")
         } catch (e: Exception) {
             RegistrationResult.Failure("Internal server error: ${e.message}")
         }
-    }
-
-    private fun getUserIdByUsername(connection: Connection, username: String): Int? {
-        val userId = connection.prepareCall(UserQuery.GET_USER_ID)
-        userId.setString(1, username)
-        val result = userId.executeQuery()
-        return if (result.next()) result.getInt("id") else null
-    }
-
-    private fun hashPassword(password: String): String {
-        val hasher = Argon2Factory.create()
-
-        return hasher.hash(2, 65536, 1, password.toCharArray())
-    }
-
-    private fun saveImage(part: PartData.FileItem): String {
-        val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
-
-        val originalName      = part.originalFileName ?: ""
-        val extension         = File(originalName).extension.lowercase()
-
-        if (extension !in allowedExtensions) {
-            throw IllegalArgumentException("Invalid image type: .$extension is not allowed.")
-        }
-
-        val fileName = UUID.randomUUID().toString() + "." + extension
-        val filePath = "image_uploads/$fileName"
-
-        File(filePath).apply {
-            parentFile.mkdirs()
-            outputStream().use { part.streamProvider().copyTo(it) }
-        }
-
-        return fileName
     }
 }
