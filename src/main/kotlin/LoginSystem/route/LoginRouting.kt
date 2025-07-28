@@ -31,6 +31,8 @@ fun Route.LoginRouting(ds: HikariDataSource) {
                 }
             } catch (e: SerializationException) {
                 call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON format"))
+            }  catch (e: IllegalStateException) {
+                call.respond(HttpStatusCode.BadRequest, GlobalResponse(403, false, e.localizedMessage))
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage))
             }

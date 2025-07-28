@@ -32,6 +32,19 @@ class LoginController(ds: HikariDataSource) {
             val resultSet = statement.executeQuery()
             if (resultSet.next()) {
                 val userId = resultSet.getInt("id")
+                connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { statusStmt ->
+                    statusStmt.setInt(1, userId)
+                    statusStmt.executeQuery().use { statusRs ->
+                        if (statusRs.next()) {
+                            val status = statusRs.getString("status")
+                            if (status.equals("PENDING", ignoreCase = true)) {
+                                throw IllegalStateException("Email not verified. Please check your email to verify.")
+                            }
+                        } else {
+                            throw IllegalStateException("No email verification record found for this user.")
+                        }
+                    }
+                }
                 val jwtToken = LoginJWT.generateJWT(userId)
                 val sessionId = LoginSession.generatedSessionId()
 
