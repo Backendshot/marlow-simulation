@@ -21,9 +21,9 @@ val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
         json(
             Json {
-                prettyPrint = true
+                prettyPrint       = true
                 ignoreUnknownKeys = false
-                isLenient = false
+                isLenient         = false
                 coerceInputValues = false
             },
         )
@@ -35,14 +35,12 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-//    val connection = Config().connect()
-    val ds = Config().getConnection()//.createDataSource()
-//    val todo = TodoController(ds)
+    val ds = Config().getConnection()
     val bearerToken = ds.connection.use { conn ->
-        conn.prepareCall(TodoQuery.GET_BEARER_TOKEN) //bearerTokenQuery
-            .executeQuery() //resultSet
-            .takeIf { it -> it.next() } //take the value if resultSet.next() is true
-            ?.getString("bearer_token") //use the value to get the bearer_token
+        conn.prepareCall(TodoQuery.GET_BEARER_TOKEN)
+            .executeQuery()
+            .takeIf { it -> it.next() }
+            ?.getString("bearer_token")
     }
 
 // Create a default Argon2 instance
@@ -95,6 +93,5 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
-//    configureDatabases()
     configureRouting(ds)
 }
