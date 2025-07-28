@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 import java.sql.Timestamp
 import java.time.format.DateTimeFormatter
 
-class LoginController(private val ds: HikariDataSource) {
+class LoginController(ds: HikariDataSource) {
     val connection = ds.connection
 
     suspend fun login(login: LoginModel, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
