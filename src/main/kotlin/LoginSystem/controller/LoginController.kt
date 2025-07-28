@@ -3,7 +3,6 @@ package com.marlow.LoginSystem.controller
 import com.marlow.LoginSystem.model.AuditModel
 import com.marlow.LoginSystem.model.LoginModel
 import com.marlow.LoginSystem.model.Validator
-import com.marlow.LoginSystem.model.LoginAuditResponse
 import com.marlow.LoginSystem.query.LoginQuery
 import com.marlow.LoginSystem.util.LoginJWT
 import com.marlow.LoginSystem.util.LoginSession
@@ -17,13 +16,13 @@ import java.time.format.DateTimeFormatter
 object LoginController {
     val connection = Config().connect()
 
-    suspend fun login(login: LoginModel, browserInfo: String): LoginAuditResponse? = withContext(Dispatchers.IO) {
+    suspend fun login(login: LoginModel, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
         val validator = Validator()
         val sanitizeLogin = validator.sanitizeInput(login)
-        val validateLogin = validator.validateLoginInput(sanitizeLogin)
+        val errorValidate = validator.validateLoginInput(sanitizeLogin)
 
-        if (validateLogin.isNotEmpty()) {
-            throw IllegalArgumentException("Validation Errors: ${validateLogin.joinToString(", ")}")
+        if (errorValidate.isNotEmpty()) {
+            throw IllegalArgumentException("Validation Errors: ${errorValidate.joinToString(", ")}")
         }
 
         connection.prepareStatement(LoginQuery.LOGIN_QUERY).use { statement ->
@@ -43,7 +42,7 @@ object LoginController {
                 }
                 val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
-                val auditModel = connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt ->
+                connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt ->
                     auditStmt.setInt(1, userId)
                     auditStmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
                     auditStmt.setString(3, browserInfo)
@@ -61,9 +60,7 @@ object LoginController {
                         }
                     }
                 }
-
-
-                val loginModel = LoginModel(
+                return@withContext LoginModel(
                     id = userId,
                     username = login.username,
                     password = login.password,
@@ -71,8 +68,6 @@ object LoginController {
                     active_session = sessionId,
                     active_session_deleted = false
                 )
-
-                return@withContext LoginAuditResponse(loginModel)
             }
         }
         return@withContext null
