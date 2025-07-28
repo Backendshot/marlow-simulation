@@ -1,0 +1,94 @@
+openapi: "3.0.3"
+info:
+  title: "TODO API sample"
+  description: "A JSON API that allows you to view and add todo tasks"
+  version: "1.0.0"
+servers:
+  - url: "http://192.168.88.27:8080"
+    description: "Internal staging server for testing"
+paths:
+  /user/login:
+    post:
+      tags:
+        - API
+      summary: "Login System"
+      description: "Login Username and Password"
+      requestBody:
+        description: "A JSON object containing login information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginModel"
+      responses:
+        "201":
+          description: "Login Successful"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Login correctly"
+  /user/logout:
+    get:
+      tags:
+        - API
+      summary: "Logout and Remove Session"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginModel"
+  /audit/{userId}:
+    get:
+      tags:
+        - API
+      summary: "Return all Audit Trail"
+      description: "Returns audit trail by its ID"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginModel"
+components:
+  schemas:
+    LoginModel:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "The unique identifier for the user"
+        username:
+          type: "string"
+          description: "The username of the user"
+        password:
+          type: "string"
+          description: "The password of the user"
+        jwt_token:
+          type: "string"
+          description: "JWT token"
+        active_session:
+          type: "string"
+          description: "Active session status"
+        active_session_deleted:
+          type: "boolean"
+          description: "Indicates if the active session has been logout"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT 
+
+  security:
+    - bearerAuth: [ ]

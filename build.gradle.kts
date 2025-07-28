@@ -11,6 +11,7 @@ version = "0.0.1"
 application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
+
 kotlin {
     jvmToolchain(18)
 }
@@ -46,6 +47,17 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("eu.bitwalker:UserAgentUtils:1.21")
     implementation(kotlin("test"))
+    implementation("org.mindrot:jbcrypt:0.4")
+    implementation("de.mkammerer:argon2-jvm:2.11")
     implementation("com.zaxxer:HikariCP:6.3.2")
     implementation("de.mkammerer:argon2-jvm:2.11")
+    implementation("de.mkammerer:argon2-jvm:2.12")
+    testImplementation(libs.ktor.server.tests)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    testImplementation(libs.mockk)
+    testImplementation(libs.assertj.core)
+    implementation(libs.dotenv.kotlin)
+    implementation(libs.hikaricp)
 }
