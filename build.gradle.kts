@@ -1,3 +1,4 @@
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
@@ -12,7 +13,7 @@ application {
 }
 
 kotlin {
-    jvmToolchain(18) // you can try other versions here
+    jvmToolchain(18)
 }
 
 repositories {
@@ -40,16 +41,23 @@ dependencies {
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+    //Login Dependencies
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
+    implementation("eu.bitwalker:UserAgentUtils:1.21")
+    implementation(kotlin("test"))
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("de.mkammerer:argon2-jvm:2.11")
     implementation("com.zaxxer:HikariCP:6.3.2")
+    implementation("de.mkammerer:argon2-jvm:2.11")
     implementation("de.mkammerer:argon2-jvm:2.12")
     testImplementation(libs.ktor.server.tests)
-    implementation(libs.ktor.client.content.negotiation) //implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
-    implementation(libs.ktor.client.core) //implementation("io.ktor:ktor-client-core:2.3.4")
-    implementation(libs.ktor.client.cio) //implementation("io.ktor:ktor-client-cio:2.3.4")
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
     testImplementation(libs.mockk)
     testImplementation(libs.assertj.core)
-    implementation(libs.dotenv.kotlin) //implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
-    implementation(libs.hikaricp) //implementation("com.zaxxer:HikariCP:6.3.2")
+    implementation(libs.dotenv.kotlin)
+    implementation(libs.hikaricp)
 }
