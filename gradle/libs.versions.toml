@@ -3,8 +3,13 @@
 h2-version = "2.3.232"
 kotlin-version = "2.1.10"
 ktor-version = "3.2.2"
-logback-version = "1.4.14"
+logback-version = "1.5.13"
 postgres-version = "42.7.7"
+mockk-version = "1.13.5"
+assertj-version = "3.24.2"
+dotenv-version = "6.5.1"
+hikaricp-version = "6.3.2"
+ktor-server-test-version = "2.3.11"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -23,6 +28,14 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor-version" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor-version" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
+ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor-server-test-version" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor-version" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor-version" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor-version" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

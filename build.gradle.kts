@@ -1,4 +1,3 @@
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
@@ -44,4 +43,13 @@ dependencies {
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("de.mkammerer:argon2-jvm:2.11")
     implementation("com.zaxxer:HikariCP:6.3.2")
+    implementation("de.mkammerer:argon2-jvm:2.12")
+    testImplementation(libs.ktor.server.tests)
+    implementation(libs.ktor.client.content.negotiation) //implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+    implementation(libs.ktor.client.core) //implementation("io.ktor:ktor-client-core:2.3.4")
+    implementation(libs.ktor.client.cio) //implementation("io.ktor:ktor-client-cio:2.3.4")
+    testImplementation(libs.mockk)
+    testImplementation(libs.assertj.core)
+    implementation(libs.dotenv.kotlin) //implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
+    implementation(libs.hikaricp) //implementation("com.zaxxer:HikariCP:6.3.2")
 }
