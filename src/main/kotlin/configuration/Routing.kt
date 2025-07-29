@@ -13,11 +13,11 @@ import registrationRouting
 
 fun Application.configureRouting(ds: HikariDataSource) {
     routing {
-        swaggerUI("/swagger","src/main/kotlin/todo/documentation/documentation.yaml")
+        //swaggerUI("/swagger","src/main/kotlin/todo/documentation/documentation.yaml")
         authenticate("auth-bearer") {
-            LoginRouting()
             todoRouting(ds)
         }
+        LoginRouting()
         registrationRouting(ds)
         static("/image_uploads") {
             files("image_uploads")

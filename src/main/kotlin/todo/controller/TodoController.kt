@@ -69,7 +69,7 @@ class TodoController(private val ds: HikariDataSource) {
 
     suspend fun readAllTodos(): MutableList<Todo> = withContext(Dispatchers.IO) {
         val data = mutableListOf<Todo>()
-        val query = ds.connection.prepareStatement(TodoQuery.GET_ALL_TODOS)
+        val query = ds.connection.prepareStatement("SELECT * FROM todos")
         val result = query.executeQuery()
         while (result.next()) {
             val userId: Int = result.getInt("user_id")

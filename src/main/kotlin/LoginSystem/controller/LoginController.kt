@@ -2,6 +2,7 @@ package com.marlow.LoginSystem.controller
 
 import com.marlow.LoginSystem.model.AuditModel
 import com.marlow.LoginSystem.model.LoginModel
+import com.marlow.LoginSystem.model.LoginRequest
 import com.marlow.LoginSystem.model.Validator
 import com.marlow.LoginSystem.query.LoginQuery
 import com.marlow.LoginSystem.util.LoginJWT
@@ -15,8 +16,7 @@ import java.time.format.DateTimeFormatter
 
 object LoginController {
     val connection = Config().connect()
-
-    suspend fun login(login: LoginModel, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
+    suspend fun login(login: LoginRequest, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
         val validator = Validator()
         val sanitizeLogin = validator.sanitizeInput(login)
         val errorValidate = validator.validateLoginInput(sanitizeLogin)
@@ -31,6 +31,21 @@ object LoginController {
             val resultSet = statement.executeQuery()
             if (resultSet.next()) {
                 val userId = resultSet.getInt("id")
+
+                connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { statusStmt ->
+                    statusStmt.setInt(1, userId)
+                    statusStmt.executeQuery().use { statusRs ->
+                        if (statusRs.next()) {
+                            val status = statusRs.getString("status")
+                            if (status.equals("PENDING", ignoreCase = true)) {
+                                throw IllegalStateException("Email not verified. Please check your email to verify.")
+                            }
+                        } else {
+                            throw IllegalStateException("No email verification record found for this user.")
+                        }
+                    }
+                }
+
                 val jwtToken = LoginJWT.generateJWT(userId)
                 val sessionId = LoginSession.generatedSessionId()
 

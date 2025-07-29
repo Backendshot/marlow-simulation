@@ -20,6 +20,12 @@ repositories {
     mavenCentral()
 }
 
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "io.ktor.server.netty.EngineMain"
+    }
+}
+
 dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.content.negotiation)
@@ -60,4 +66,5 @@ dependencies {
     testImplementation(libs.assertj.core)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
+    implementation("io.ktor:ktor-server-cors:${version}")
 }

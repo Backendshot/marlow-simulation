@@ -9,18 +9,15 @@ import io.ktor.server.routing.*
 
 fun Application.configureHTTP() {
     install(CORS) {
-        allowMethod(HttpMethod.Options)
-        allowMethod(HttpMethod.Put)
-        allowMethod(HttpMethod.Delete)
-        allowMethod(HttpMethod.Patch)
+        anyHost()
+        allowCredentials = true
         allowHeader(HttpHeaders.Authorization)
-        allowHeader("MyCustomHeader")
-        anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader("X-Requested-With")
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
     }
-    routing {
-        openAPI(path = "openapi")
-    }
-    routing {
-        swaggerUI(path = "openapi")
-    }
+
+//    routing { openAPI(path = "openapi") }
+//    routing { swaggerUI(path = "openapi") }
 }
