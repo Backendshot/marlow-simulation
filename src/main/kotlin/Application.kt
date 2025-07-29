@@ -1,22 +1,15 @@
 package com.marlow
 
-import com.marlow.configuration.Config
-import com.marlow.configuration.configureHTTP
-import com.marlow.configuration.configureRouting
-import com.marlow.configuration.configureSecurity
-import com.marlow.configuration.configureSerialization
+import com.marlow.configuration.*
+import com.marlow.plugin.installGlobalErrorHandling
 import com.marlow.todo.query.TodoQuery
-import io.ktor.client.HttpClient
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.client.engine.cio.CIO
+import io.ktor.server.auth.*
+import io.ktor.server.netty.*
 import kotlinx.serialization.json.Json
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.UserIdPrincipal
-import io.ktor.server.auth.bearer
-import kotlin.test.assertEquals
-
-import io.ktor.server.netty.EngineMain
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -40,7 +33,7 @@ fun Application.module() {
     val bearerToken = ds.connection.use { conn ->
         conn.prepareCall(TodoQuery.GET_BEARER_TOKEN)
             .executeQuery()
-            .takeIf { it -> it.next() }
+            .takeIf { it.next() }
             ?.getString("bearer_token")
     }
 
@@ -69,5 +62,6 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
+    installGlobalErrorHandling()
     configureRouting(ds)
 }

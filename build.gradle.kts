@@ -65,4 +65,5 @@ dependencies {
     testImplementation(libs.assertj.core)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
+    implementation(libs.ktor.server.status.pages)
 }
