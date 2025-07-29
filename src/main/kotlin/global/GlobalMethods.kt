@@ -45,6 +45,14 @@ class GlobalMethods {
             throw IllegalArgumentException("Invalid image type: .$extension is not allowed.")
         }
 
+        val inputStream    = part.streamProvider()
+        val byteArray      = inputStream.readBytes()
+        val maxSizeInBytes = 2 * 1024 * 1024
+
+        if (byteArray.size > maxSizeInBytes) {
+            throw IllegalArgumentException("File size exceeds 2MB limit.")
+        }
+
         val fileName = UUID.randomUUID().toString() + "." + extension
         val filePath = "image_uploads/$fileName"
 
@@ -57,7 +65,7 @@ class GlobalMethods {
      }
 
     suspend fun getAccessToken(): String {
-        val dotEnv = dotenv()
+        val dotEnv       = dotenv()
         val clientId     = dotEnv["GMAIL_CLIENT_ID"] ?: return "Missing GMAIL_CLIENT_ID env variable."
         val clientSecret = dotEnv["GMAIL_CLIENT_SECRET"] ?: return "Missing GMAIL_CLIENT_SECRET env variable."
         val refreshToken = dotEnv["GMAIL_REFRESH_TOKEN"] ?: return "Missing GMAIL_REFRESH_TOKEN env variable."
@@ -84,7 +92,7 @@ class GlobalMethods {
         body: String,
         accessToken: String
     ) {
-        val dotEnv = dotenv()
+        val dotEnv    = dotenv()
         val userEmail = dotEnv["GMAIL_EMAIL"]
         val props     = Properties().apply {
             put("mail.smtp.starttls.enable", "true")
@@ -101,14 +109,6 @@ class GlobalMethods {
             setSubject(subject)
             setText(body)
         }
-
-
-        val logger = LoggerFactory.getLogger("MyLogger")
-
-        logger.info("Recipient: $recipient")
-        logger.info("Subject: $subject")
-        logger.info("Body: $body")
-        logger.info("Access Token: $accessToken")
 
         val transport = session.getTransport("smtp")
         transport.connect("smtp.gmail.com", userEmail, accessToken)
