@@ -1,24 +1,17 @@
 package com.marlow.registrationSystem.controllers
 
-import com.marlow.configuration.Config
 import com.marlow.global.GlobalMethods
 import com.marlow.global.RegistrationResult
 import com.marlow.registrationSystem.dto.RegistrationRequest
 import com.marlow.registrationSystem.models.CredentialsModel
 import com.marlow.registrationSystem.models.InformationModel
 import com.marlow.registrationSystem.queries.UserQuery
-import com.marlow.todo.query.TodoQuery
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
 import io.ktor.server.application.*
 import io.ktor.server.request.*
-import java.sql.Connection
 import java.time.LocalDate
-import de.mkammerer.argon2.Argon2Factory
-import java.io.File
-import java.util.UUID
 
 class RegistrationController (private val ds: HikariDataSource) {
     suspend fun register(call: ApplicationCall): RegistrationResult {
@@ -35,7 +28,7 @@ class RegistrationController (private val ds: HikariDataSource) {
                         formFields[part.name.orEmpty()] = part.value
                     }
                     is PartData.FileItem -> {
-                        if (part.name == "image") {
+                        if (part.name == "image" && !part.originalFileName.isNullOrBlank()) {
                             imageFileName = methods.saveImage(part)
                         }
                     }
@@ -51,7 +44,7 @@ class RegistrationController (private val ds: HikariDataSource) {
                 lastName   = formFields["lastName"] ?: "",
                 roleType   = formFields["roleType"] ?: "",
                 email      = formFields["email"] ?: "",
-                birthday   = formFields["birthday"],
+                birthday   = formFields["birthday"] ?: "",
                 password   = formFields["password"] ?: "",
                 image      = imageFileName
             )
@@ -63,7 +56,7 @@ class RegistrationController (private val ds: HikariDataSource) {
                 lastName   = input.lastName,
                 roleType   = input.roleType,
                 email      = input.email,
-                birthday   = input.birthday?.let { LocalDate.parse(it) },
+                birthday   = input.birthday?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it) },
                 createdAt  = now,
                 updatedAt  = now,
                 image      = imageFileName
@@ -125,23 +118,23 @@ class RegistrationController (private val ds: HikariDataSource) {
             insertCred.execute()
 
             val accessToken = methods.getAccessToken()
+            print("Preparing to send email...")
             methods.sendEmail(
                 recipient = information.email,
                 subject   = "Welcome to our app, ${information.firstName}!",
                 body      = """
                      Hello ${information.firstName},
                         Your registration was successful. Welcome aboard!
-                        Regards,  
+                        Regards,
                         The Team
                 """.trimIndent(),
                 accessToken = accessToken
             )
 
-            // TODO: Test the email sending
             // TODO: Add saving inside the tbl_email_sending table
-
             RegistrationResult.Success("User registered successfully.")
         } catch (e: Exception) {
+            e.printStackTrace()
             RegistrationResult.Failure("Internal server error: ${e.message}")
         }
     }

@@ -2,6 +2,7 @@ package com.marlow.global
 
 import com.marlow.registrationSystem.queries.UserQuery
 import de.mkammerer.argon2.Argon2Factory
+import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.forms.submitForm
@@ -15,6 +16,7 @@ import jakarta.mail.internet.MimeMessage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.sql.Connection
 import java.util.Properties
@@ -55,9 +57,10 @@ class GlobalMethods {
      }
 
     suspend fun getAccessToken(): String {
-        val clientId     = System.getenv("GMAIL_CLIENT_ID")
-        val clientSecret = System.getenv("GMAIL_CLIENT_SECRET")
-        val refreshToken = System.getenv("GMAIL_REFRESH_TOKEN")
+        val dotEnv = dotenv()
+        val clientId     = dotEnv["GMAIL_CLIENT_ID"] ?: return "Missing GMAIL_CLIENT_ID env variable."
+        val clientSecret = dotEnv["GMAIL_CLIENT_SECRET"] ?: return "Missing GMAIL_CLIENT_SECRET env variable."
+        val refreshToken = dotEnv["GMAIL_REFRESH_TOKEN"] ?: return "Missing GMAIL_REFRESH_TOKEN env variable."
         val client       = HttpClient(CIO)
 
         val response = client.submitForm(
@@ -81,8 +84,9 @@ class GlobalMethods {
         body: String,
         accessToken: String
     ) {
-        val userEmail = System.getenv("GMAIL_EMAIL")
-        val props = Properties().apply {
+        val dotEnv = dotenv()
+        val userEmail = dotEnv["GMAIL_EMAIL"]
+        val props     = Properties().apply {
             put("mail.smtp.starttls.enable", "true")
             put("mail.smtp.auth.mechanisms", "XOAUTH2")
             put("mail.smtp.auth", "true")
@@ -97,6 +101,14 @@ class GlobalMethods {
             setSubject(subject)
             setText(body)
         }
+
+
+        val logger = LoggerFactory.getLogger("MyLogger")
+
+        logger.info("Recipient: $recipient")
+        logger.info("Subject: $subject")
+        logger.info("Body: $body")
+        logger.info("Access Token: $accessToken")
 
         val transport = session.getTransport("smtp")
         transport.connect("smtp.gmail.com", userEmail, accessToken)
