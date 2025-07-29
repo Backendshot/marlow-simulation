@@ -16,6 +16,10 @@ fun Application.configureHTTP() {
         allowHeader("X-Requested-With")
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Patch)
     }
 
 //    routing { openAPI(path = "openapi") }
