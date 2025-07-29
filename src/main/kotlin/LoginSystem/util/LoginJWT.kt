@@ -2,16 +2,13 @@ package com.marlow.LoginSystem.util
 
 import java.security.SecureRandom
 import java.util.Base64
+import io.github.cdimascio.dotenv.dotenv
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 object LoginJWT {
-    private val SECRET: String by lazy {
-        val random = SecureRandom()
-        val key = ByteArray(32) 
-        random.nextBytes(key)
-        Base64.getUrlEncoder().withoutPadding().encodeToString(key)
-    }
+    val dotenv   = dotenv()
+    private val SECRET = dotenv["SECRET_TOKEN"]
 
     fun generateJWT(userId: Int): String {
         val header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"
@@ -30,7 +27,6 @@ object LoginJWT {
 
         val (header, payload, signature) = parts
 
-        // Verify signature
         val expectedSig = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(hmacSha256("$header.$payload", SECRET))
 
@@ -38,7 +34,6 @@ object LoginJWT {
             throw IllegalArgumentException("Invalid token signature")
         }
 
-        // Decode payload and extract userId
         val jsonPayload = String(Base64.getUrlDecoder().decode(payload))
         val userIdRegex = Regex("\"userId\"\\s*:\\s*(\\d+)")
         val match = userIdRegex.find(jsonPayload) ?: throw IllegalArgumentException("userId not found in token")
