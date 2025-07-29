@@ -16,7 +16,6 @@ import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.bearer
 
 import io.ktor.server.netty.EngineMain
-
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
         json(

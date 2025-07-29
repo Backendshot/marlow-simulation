@@ -3,12 +3,11 @@ package com.marlow.LoginSystem.route
 import com.marlow.LoginSystem.controller.LoginController
 import com.marlow.LoginSystem.model.LoginRequest
 import com.marlow.LoginSystem.util.LoginAudit
+import com.marlow.LoginSystem.model.LogoutRequest
 import com.marlow.global.GlobalResponse
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.*
 import io.ktor.server.request.receive
-import io.ktor.server.response.*
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import kotlinx.serialization.SerializationException
@@ -49,9 +48,9 @@ fun Route.LoginRouting(ds: HikariDataSource) {
 
         post("/logout") {
             try {
-                val loginData = call.receive<LoginRequest>()
-                val userId = loginData.id
-                val result = LoginController(ds).logout(userId)
+                val logoutData = call.receive<LogoutRequest>()
+                val result = LoginController(ds).logout(logoutData.id)
+
                 if (result) {
                     call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Logout successful"))
                 } else {

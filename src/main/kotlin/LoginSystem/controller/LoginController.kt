@@ -10,7 +10,6 @@ import com.marlow.LoginSystem.util.LoginSession
 import com.zaxxer.hikari.HikariDataSource
 import java.sql.Timestamp
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,106 +19,75 @@ class LoginController(ds: HikariDataSource) {
     suspend fun login(login: LoginRequest, browserInfo: String): LoginModel? =
             withContext(Dispatchers.IO) {
                 val validator = Validator()
-                val sanitizeLogin = validator.sanitizeInput(login)
-                val errorValidate = validator.validateLoginInput(sanitizeLogin)
+                val sanitizedLogin: LoginRequest = validator.sanitizeInput(login)
+                val errors = validator.validateLoginInput(sanitizedLogin)
 
-                if (errorValidate.isNotEmpty()) {
+                if (errors.isNotEmpty()) {
                     throw IllegalArgumentException(
-                            "Validation Errors: ${errorValidate.joinToString(", ")}"
+                            "Validation Errors: ${errors.joinToString(", ")}"
                     )
                 }
 
-                connection.prepareStatement(LoginQuery.LOGIN_QUERY).use { statement ->
-                    statement.setString(1, login.username)
-                    statement.setString(2, login.password)
-                    val resultSet = statement.executeQuery()
-                    if (resultSet.next()) {
-                        val userId = resultSet.getInt("id")
-
-                        connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use {
-                                statusStmt ->
-                            statusStmt.setInt(1, userId)
-                            statusStmt.executeQuery().use { statusRs ->
-                                if (statusRs.next()) {
-                                    val status = statusRs.getString("status")
-                                    if (status.equals("PENDING", ignoreCase = true)) {
-                                        throw IllegalStateException(
-                                                "Email not verified. Please check your email to verify."
-                                        )
-                                    }
-                                } else {
-                                    throw IllegalStateException(
-                                            "No email verification record found for this user."
-                                    )
-                                }
+                val userId =
+                        connection.prepareStatement(LoginQuery.LOGIN_QUERY).use { stmt ->
+                            stmt.setString(1, sanitizedLogin.username)
+                            stmt.setString(2, sanitizedLogin.password)
+                            stmt.executeQuery().use { rs ->
+                                if (rs.next()) rs.getInt("id") else return@withContext null
                             }
                         }
 
-                        connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use {
-                                statusStmt ->
-                            statusStmt.setInt(1, userId)
-                            statusStmt.executeQuery().use { statusRs ->
-                                if (statusRs.next()) {
-                                    val status = statusRs.getString("status")
-                                    if (status.equals("PENDING", ignoreCase = true)) {
-                                        throw IllegalStateException(
-                                                "Email not verified. Please check your email to verify."
-                                        )
-                                    }
-                                } else {
-                                    throw IllegalStateException(
-                                            "No email verification record found for this user."
-                                    )
-                                }
+                connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
+                    stmt.setInt(1, userId)
+                    stmt.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            val status = rs.getString("status")
+                            if (status.equals("PENDING", ignoreCase = true)) {
+                                throw IllegalStateException(
+                                        "Email not verified. Please check your email to verify."
+                                )
                             }
+                            true
+                        } else {
+                            throw IllegalStateException(
+                                    "No email verification record found for this user."
+                            )
                         }
-                        val jwtToken = LoginJWT.generateJWT(userId)
-                        val sessionId = LoginSession.generatedSessionId()
-
-                        connection.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use {
-                                updateStmt ->
-                            updateStmt.setString(1, sessionId)
-                            updateStmt.setString(2, jwtToken)
-                            updateStmt.setInt(3, userId)
-                            updateStmt.executeUpdate()
-                        }
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-
-                        connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { auditStmt
-                            ->
-                            auditStmt.setInt(1, userId)
-                            auditStmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
-                            auditStmt.setString(3, browserInfo)
-
-                            auditStmt.executeQuery().use { rs ->
-                                if (rs.next()) {
-                                    AuditModel(
-                                            id = rs.getInt("id"),
-                                            user_id = rs.getInt("user_id"),
-                                            timestamp =
-                                                    rs.getTimestamp("timestamp")
-                                                            .toLocalDateTime()
-                                                            .format(formatter),
-                                            browser = rs.getString("browser")
-                                    )
-                                } else {
-                                    throw kotlin.Exception(
-                                            "Audit insert failed; no result returned."
-                                    )
-                                }
-                            }
-                        }
-                        return@withContext LoginModel(
-                                id = userId,
-                                username = login.username,
-                                password = login.password,
-                                jwt_token = jwtToken,
-                                active_session = sessionId,
-                                active_session_deleted = false
-                        )
                     }
                 }
-                return@withContext null
+
+                val jwtToken = LoginJWT.generateJWT(userId)
+                val sessionId = LoginSession.generatedSessionId()
+                val sessionDeleted = false
+
+                connection.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { stmt ->
+                    stmt.setString(1, sessionId)
+                    stmt.setString(2, jwtToken)
+                    stmt.setBoolean(3, sessionDeleted)
+                    stmt.setInt(4, userId)
+                    stmt.executeUpdate()
+                }
+
+                connection.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { stmt ->
+                    stmt.setInt(1, userId)
+                    stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
+                    stmt.setString(3, browserInfo)
+
+                    stmt.executeQuery().use { rs ->
+                        if (!rs.next()) {
+                            throw Exception("Audit insert failed; no result returned.")
+                        }
+                    }
+                }
+
+                return@withContext LoginModel(
+                        id = userId,
+                        username = sanitizedLogin.username,
+                        password = sanitizedLogin.password,
+                        jwt_token = jwtToken,
+                        active_session = sessionId,
+                        active_session_deleted = sessionDeleted
+                )
             }
 
     suspend fun viewAllAuditById(user_id: Int): MutableList<AuditModel> =
@@ -138,10 +106,10 @@ class LoginController(ds: HikariDataSource) {
                 return@withContext auditList
             }
 
-    suspend fun logout(userId: Int): Boolean =
+    suspend fun logout(id: Int): Boolean =
             withContext(Dispatchers.IO) {
                 connection.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
-                    stmt.setInt(1, userId)
+                    stmt.setInt(1, id)
                     val rowsUpdated = stmt.executeUpdate()
                     return@withContext rowsUpdated > 0
                 }
