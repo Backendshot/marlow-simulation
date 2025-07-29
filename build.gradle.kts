@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
     alias(libs.plugins.kotlin.plugin.serialization)
+//    alias(libs.plugins.kotlin.multiplatform)
 }
 
 group = "com.marlow"
@@ -65,4 +66,15 @@ dependencies {
     testImplementation(libs.assertj.core)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
+    //For Telemetry and Monitoring
+//    implementation(project(":core"))
+    implementation(libs.ktor.server.metrics)
+    implementation(libs.cohort.ktor)
+    implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.call.id)
+    //OpenAPI
+    api(libs.opentelemetry.sdk.extension.autoconfigure)
+    api(libs.opentelemetry.semconv)
+    api(libs.opentelemetry.exporter.otlp)
+    api(libs.opentelemetry.ktor)
 }
