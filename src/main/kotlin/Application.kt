@@ -2,7 +2,6 @@ package com.marlow
 
 import com.marlow.configuration.Config
 import com.marlow.configuration.configureHTTP
-import com.marlow.configuration.configureMonitoring
 import com.marlow.configuration.configureRouting
 import com.marlow.configuration.configureSecurity
 import com.marlow.configuration.configureSerialization
@@ -70,6 +69,5 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
-    configureMonitoring()
     configureRouting(ds)
 }

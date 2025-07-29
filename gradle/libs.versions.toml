@@ -36,18 +36,8 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp-version" }
-# For Telemetry and Monitoring
-opentelemetry-sdk-extension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version = "1.52.0" }
-opentelemetry-semconv = { module = "io.opentelemetry.semconv:opentelemetry-semconv", version = "1.34.0" }
-opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version = "1.52.0" }
-opentelemetry-ktor = { module = "io.opentelemetry.instrumentation:opentelemetry-ktor-3.0", version = "2.18.0-alpha" }
-ktor-server-metrics = { module = "io.ktor:ktor-server-metrics", version.ref = "ktor-version" }
-cohort-ktor = { module = "com.sksamuel.cohort:cohort-ktor", version = "2.7.2" }
-ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor-version" }
-ktor-server-call-id = { module = "io.ktor:ktor-server-call-id", version.ref = "ktor-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
