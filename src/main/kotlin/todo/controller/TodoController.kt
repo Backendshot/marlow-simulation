@@ -58,32 +58,39 @@ class TodoController(private val ds: HikariDataSource, private val dispatcher: C
 
     suspend fun readAllTodos(): MutableList<Todo> = withContext(dispatcher) {
         val data = mutableListOf<Todo>()
-        val query = ds.connection.prepareStatement(TodoQuery.GET_ALL_TODOS)
-        val result = query.executeQuery()
-        while (result.next()) {
-            val userId: Int = result.getInt("user_id")
-            val id: Int = result.getInt("id")
-            val title = result.getString("title")
-            val completed = result.getBoolean("completed")
-            data.add(Todo(userId, id, title, completed))
+        ds.connection.use { conn ->
+            conn.prepareStatement(TodoQuery.GET_ALL_TODOS).use { stmt ->
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val userId: Int = rs.getInt("user_id")
+                        val id: Int = rs.getInt("id")
+                        val title = rs.getString("title")
+                        val completed = rs.getBoolean("completed")
+                        data.add(Todo(userId, id, title, completed))
+                    }
+                    return@withContext data
+                }
+            }
         }
-        return@withContext data
     }
 
     suspend fun readTodoById(id: Int): Todo = withContext(dispatcher) {
-        val query = ds.connection.prepareStatement(TodoQuery.GET_TODO_BY_ID)
-        query.setInt(1, id)
-        val result = query.executeQuery()
-        if (result.next()) {
-            val userId: Int = result.getInt("user_id")
-            val id: Int = result.getInt("id")
-            val title = result.getString("title")
-            val completed = result.getBoolean("completed")
-            return@withContext Todo(userId, id, title, completed)
-        } else {
-            throw kotlin.Exception("Record not found")
+        ds.connection.use { conn ->
+            conn.prepareStatement(TodoQuery.GET_TODO_BY_ID).use { stmt ->
+                stmt.setInt(1, id)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        val userId: Int = rs.getInt("user_id")
+                        val id: Int = rs.getInt("id")
+                        val title = rs.getString("title")
+                        val completed = rs.getBoolean("completed")
+                        return@withContext Todo(userId, id, title, completed)
+                    } else {
+                        throw kotlin.Exception("Record not found")
+                    }
+                }
+            }
         }
-
     }
 
     suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(dispatcher) {
@@ -100,31 +107,32 @@ class TodoController(private val ds: HikariDataSource, private val dispatcher: C
             throw kotlin.Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
         }
 
-        val result = ds.connection.prepareCall(TodoQuery.UPDATE_TODO).use { stmt ->
-            stmt.setInt(1, sanitizedTodo.userId)
-            stmt.setInt(2, id)
-            stmt.setString(3, sanitizedTodo.title)
-            stmt.setBoolean(4, sanitizedTodo.completed)
-            stmt.registerOutParameter(5, Types.INTEGER)
-            stmt.execute()
-
-            return@use stmt.getInt(5)
+        ds.connection.use { conn ->
+            conn.prepareCall(TodoQuery.UPDATE_TODO).use { stmt ->
+                stmt.setInt(1, todo.userId)
+                stmt.setInt(2, id)
+                stmt.setString(3, todo.title)
+                stmt.setBoolean(4, todo.completed)
+                stmt.registerOutParameter(5, Types.INTEGER)
+                stmt.execute()
+                stmt.getInt(5)
+            }
         }
-
-        return@withContext result
     }
 
     suspend fun deleteTodo(id: Int): Int = withContext(dispatcher) {
-        val result = ds.connection.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
-            stmt.setInt(1, id)
-            stmt.registerOutParameter(2, Types.INTEGER)
+        ds.connection.use { conn ->
+            conn.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
+                stmt.setInt(1, id)
+                stmt.registerOutParameter(2, Types.INTEGER)
 
-            stmt.execute()
-            return@use stmt.getInt(2)
+                stmt.execute()
+                stmt.getInt(2)
+            }
         }
 
         //Todo: add a message that indicates that the todo to be deleted does not exist
-        return@withContext result
+//        return@withContext result
     }
 
     suspend fun fetchTodos(): List<Todo> = withContext(dispatcher) {
