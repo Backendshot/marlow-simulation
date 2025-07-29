@@ -7,14 +7,15 @@ import com.marlow.LoginSystem.query.LoginQuery
 import com.marlow.LoginSystem.util.LoginJWT
 import com.marlow.LoginSystem.util.LoginSession
 import com.marlow.configuration.Config
+import com.zaxxer.hikari.HikariDataSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.sql.Timestamp
 import java.time.format.DateTimeFormatter
 
-object LoginController {
-    val connection = Config().connect()
+class LoginController(ds: HikariDataSource) {
+    val connection = ds.connection
 
     suspend fun login(login: LoginModel, browserInfo: String): LoginModel? = withContext(Dispatchers.IO) {
         val validator = Validator()
@@ -31,6 +32,19 @@ object LoginController {
             val resultSet = statement.executeQuery()
             if (resultSet.next()) {
                 val userId = resultSet.getInt("id")
+                connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { statusStmt ->
+                    statusStmt.setInt(1, userId)
+                    statusStmt.executeQuery().use { statusRs ->
+                        if (statusRs.next()) {
+                            val status = statusRs.getString("status")
+                            if (status.equals("PENDING", ignoreCase = true)) {
+                                throw IllegalStateException("Email not verified. Please check your email to verify.")
+                            }
+                        } else {
+                            throw IllegalStateException("No email verification record found for this user.")
+                        }
+                    }
+                }
                 val jwtToken = LoginJWT.generateJWT(userId)
                 val sessionId = LoginSession.generatedSessionId()
 

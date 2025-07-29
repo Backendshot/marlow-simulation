@@ -12,6 +12,11 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
+// This is to produce executable file -all.jar
+tasks.jar {
+    manifest.attributes["Main-Class"] = "io.ktor.server.netty.EngineMain"
+}
+
 kotlin {
     jvmToolchain(18)
 }

@@ -9,5 +9,6 @@ class LoginQuery {
         const val INSERT_AUDIT_QUERY = "INSERT INTO audit_trail (user_id, timestamp, browser) VALUES (?, ?, ?) RETURNING id, user_id, timestamp, browser"
         //const val GET_AUDIT_QUERY = "SELECT * FROM audit_trail ORDER BY timestamp DESC"
         const val GET_AUDIT_BY_ID_QUERY = "SELECT * FROM audit_trail WHERE user_id = ? ORDER BY timestamp DESC"
+        const val CHECK_EMAIL_STATUS_QUERY = "SELECT status FROM tbl_email_sending WHERE user_id = ?"
     }
 }
