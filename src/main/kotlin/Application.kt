@@ -1,15 +1,23 @@
 package com.marlow
 
-import com.marlow.configuration.*
 import com.marlow.plugin.installGlobalErrorHandling
+import com.marlow.LoginSystem.query.LoginQuery
+import com.marlow.LoginSystem.util.LoginJWT
+import com.marlow.configuration.Config
+import com.marlow.configuration.configureHTTP
+import com.marlow.configuration.configureRouting
+import com.marlow.configuration.configureSecurity
+import com.marlow.configuration.configureSerialization
 import com.marlow.todo.query.TodoQuery
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.netty.*
 import kotlinx.serialization.json.Json
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.bearer
+import io.ktor.server.netty.EngineMain
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -30,20 +38,37 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val ds = Config().getConnection()
-    val bearerToken = ds.connection.use { conn ->
-        conn.prepareCall(TodoQuery.GET_BEARER_TOKEN)
-            .executeQuery()
-            .takeIf { it.next() }
-            ?.getString("bearer_token")
-    }
-
     install(Authentication) {
         bearer("auth-bearer") {
             realm = "Access to the '/' path"
             authenticate { tokenCredential ->
-                if (tokenCredential.token == bearerToken) {
-                    UserIdPrincipal("marlow")
-                } else {
+                try {
+                    val userId = LoginJWT.verifyAndExtractUserId(tokenCredential.token)
+
+                    val isValidToken =
+                        ds.connection.use { conn ->
+                            conn.prepareStatement(LoginQuery.GET_BEARER_TOKEN).use { stmt ->
+                                stmt.setInt(1, userId)
+                                val rs = stmt.executeQuery()
+                                var valid = false
+                                while (rs.next()) {
+                                    val storedToken = rs.getString("jwt_token")
+                                    if (storedToken == tokenCredential.token) {
+                                        valid = true
+                                        break
+                                    }
+                                }
+                                valid
+                            }
+                        }
+
+                    if (isValidToken) {
+                        UserIdPrincipal(userId.toString())
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    println("JWT validation failed: ${e.message}")
                     null
                 }
             }
@@ -51,12 +76,14 @@ fun Application.module() {
     }
 
     install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = false
-            ignoreUnknownKeys = false
-            coerceInputValues = false
-        })
+        json(
+                Json {
+                    prettyPrint = true
+                    isLenient = false
+                    ignoreUnknownKeys = false
+                    coerceInputValues = false
+                }
+        )
     }
 
     configureSerialization()
