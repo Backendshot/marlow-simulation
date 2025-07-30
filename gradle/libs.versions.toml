@@ -36,6 +36,7 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv-version" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp-version" }
+ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

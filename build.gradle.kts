@@ -72,4 +72,5 @@ dependencies {
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
     implementation("io.ktor:ktor-server-cors:${version}")
+    implementation(libs.ktor.server.status.pages)
 }

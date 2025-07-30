@@ -66,11 +66,9 @@ class Config {
 
     fun createDataSource(): HikariDataSource {
         val dotenv   = dotenv()
-        val database = dotenv["DB_DATABASE"]
         val hostname = dotenv["DB_HOSTNAME"]
         val port     = dotenv["DB_PORT"] //"5432" //pgBouncer's port address
         val dbName   = dotenv["DB_NAME"]
-        val url      = "jdbc:$database://$hostname:$port/$dbName"
         val username = dotenv["DB_USERNAME"]
         val password = dotenv["DB_PASSWORD"]
 
@@ -82,13 +80,6 @@ class Config {
         props.setProperty("dataSource.portNumber", port)
         props.setProperty("dataSource.databaseName", dbName)
         //Tune to match PgBouncer capacity
-//        props.setProperty("dataSource.maximumPoolSize", "10")
-//        props.setProperty("dataSource.maxLifetime", "30000") //30 seconds less than PgBouncer reset/timeout
-//        props.setProperty("dataSource.keepaliveTime", "30000")
-        // disable server-prepared statements to avoid PgBouncer issues
-//        props.setProperty("dataSource.cachePrepStmts", "false")
-//        props.setProperty("dataSource.prepStmtCacheSize", "250")
-//        props.setProperty("dataSource.prepStmtCacheSqlLimit", "2048")
         props.put("dataSource.logWriter", PrintWriter(System.out))
 
         val config = HikariConfig(props)
