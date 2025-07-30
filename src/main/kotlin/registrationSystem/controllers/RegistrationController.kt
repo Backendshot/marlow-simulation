@@ -4,9 +4,12 @@ import com.marlow.global.GlobalMethods
 import com.marlow.global.RegistrationResult
 import com.marlow.registrationSystem.dto.RegistrationRequest
 import com.marlow.registrationSystem.models.CredentialsModel
+import com.marlow.registrationSystem.models.EmailSendingModel
 import com.marlow.registrationSystem.models.InformationModel
 import com.marlow.registrationSystem.queries.UserQuery
+import com.marlow.todo.query.TodoQuery
 import com.zaxxer.hikari.HikariDataSource
+import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.server.application.*
@@ -91,11 +94,11 @@ class RegistrationController (private val ds: HikariDataSource) {
             insertInfo.setString(10, information.image)
             insertInfo.execute()
 
-            val userId = methods.getUserIdByUsername(ds.connection, information.username)
+            val user = methods.getUserByUsername(ds.connection, information.username)
                 ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
 
             val credentials = CredentialsModel(
-                userId    = userId,
+                userId    = user.id,
                 username  = information.username,
                 password  = methods.hashPassword(input.password),
                 createdAt = now,
@@ -117,21 +120,60 @@ class RegistrationController (private val ds: HikariDataSource) {
             insertCred.setObject(7, credentials.updatedAt)
             insertCred.execute()
 
+            val verificationLink = "http://localhost:8080/api/user/email/verify?userId=${user.id}"
+            val dotEnv           = dotenv()
+
+            val emailLogs = EmailSendingModel(
+                userId        = user.id,
+                fromSystem    = "REGISTRATION",
+                senderEmail   = dotEnv["GMAIL_EMAIL"],
+                receiverEmail = user.email,
+                status        = "PENDING",
+                subject       = "Welcome to our app, ${input.firstName}!",
+                body          = """
+                                    Hello ${input.firstName},
+                                    
+                                    Your registration was successful!
+                            
+                                    Please click the link below to verify your email:
+                                    $verificationLink
+                            
+                                    Regards,
+                                    The Team
+                                """.trimIndent(),
+                requestedAt   = now,
+                verifiedAt    = null,
+            ).sanitized()
+
+            val emailLogsError = emailLogs.validate()
+            if (emailLogsError.isNotEmpty()) {
+                return RegistrationResult.ValidationError("Email Logs validation failed.")
+            }
+
+            ds.connection.use { conn ->
+                conn.prepareCall(UserQuery.INSERT_EMAIL_SENDING).use { stmt ->
+                    stmt.setInt(1, emailLogs.userId)
+                    stmt.setString(2, emailLogs.fromSystem)
+                    stmt.setString(3, emailLogs.senderEmail)
+                    stmt.setString(4, emailLogs.receiverEmail)
+                    stmt.setString(5, emailLogs.status)
+                    stmt.setString(6, emailLogs.subject)
+                    stmt.setString(7, emailLogs.body)
+                    stmt.setObject(8, emailLogs.requestedAt)
+                    stmt.setObject(9, emailLogs.verifiedAt)
+                    stmt.execute()
+                }
+            }
+
             val accessToken = methods.getAccessToken()
             print("Preparing to send email...")
             methods.sendEmail(
-                recipient = information.email,
-                subject   = "Welcome to our app, ${information.firstName}!",
-                body      = """
-                     Hello ${information.firstName},
-                        Your registration was successful. Welcome aboard!
-                        Regards,
-                        The Team
-                """.trimIndent(),
+                recipient   = information.email,
+                subject     = emailLogs.subject,
+                body        = emailLogs.body,
                 accessToken = accessToken
             )
 
-            // TODO: Add saving inside the tbl_email_sending table
             RegistrationResult.Success("User registered successfully.")
         } catch (e: Exception) {
             e.printStackTrace()

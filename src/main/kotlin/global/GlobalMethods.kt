@@ -16,18 +16,24 @@ import jakarta.mail.internet.MimeMessage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.sql.Connection
 import java.util.Properties
 import java.util.UUID
 
 class GlobalMethods {
-     fun getUserIdByUsername(connection: Connection, username: String): Int? {
-        val userId = connection.prepareCall(UserQuery.GET_USER_ID)
-        userId.setString(1, username)
-        val result = userId.executeQuery()
-        return if (result.next()) result.getInt("id") else null
+    fun getUserByUsername(connection: Connection, username: String): GlobalUserInfo? {
+        val stmt = connection.prepareCall(UserQuery.GET_USER)
+        stmt.setString(1, username)
+        val result = stmt.executeQuery()
+
+        return if (result.next()) {
+            val id    = result.getInt("id")
+            val email = result.getString("email")
+            GlobalUserInfo(id, email)
+        } else {
+            null
+        }
     }
 
      fun hashPassword(password: String): String {
@@ -88,7 +94,7 @@ class GlobalMethods {
 
     fun sendEmail(
         recipient: String,
-        subject: String,
+        subject: String?,
         body: String,
         accessToken: String
     ) {
@@ -114,5 +120,18 @@ class GlobalMethods {
         transport.connect("smtp.gmail.com", userEmail, accessToken)
         transport.sendMessage(message, message.allRecipients)
         transport.close()
+    }
+
+    fun loadEmailTemplate(templateName: String, replacements: Map<String, String>): String {
+        val inputStream = this::class.java.getResourceAsStream("/templates/$templateName")
+            ?: throw IllegalArgumentException("Template file not found: $templateName")
+
+        var template = inputStream.bufferedReader().use { it.readText() }
+
+        replacements.forEach { (key, value) ->
+            template = template.replace("{{${key}}}", value)
+        }
+
+        return template
     }
 }
