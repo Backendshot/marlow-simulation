@@ -1,33 +1,13 @@
 package com.marlow.configuration
 
-import com.codahale.metrics.*
-import com.sksamuel.cohort.*
-import com.sksamuel.cohort.cpu.*
-import com.sksamuel.cohort.memory.*
+import com.sksamuel.cohort.Cohort
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.application.install
-import io.ktor.server.application.log
-import io.ktor.server.metrics.dropwizard.*
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.request.*
-import io.ktor.server.request.httpMethod
-import io.ktor.server.request.receiveText
 import io.ktor.server.response.*
-import io.ktor.server.response.respondText
 import io.ktor.server.routing.*
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.instrumentation.ktor.v3_0.KtorServerTelemetry
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.Dispatchers
-import org.slf4j.event.*
-import kotlin.text.isNotEmpty
-import kotlin.time.Duration.Companion.seconds
 
 fun Application.configureMonitoring() {
 //    val openTelemetry = getOpenTelemetry(serviceName = "opentelemetry-ktor-marlow-simulation")
