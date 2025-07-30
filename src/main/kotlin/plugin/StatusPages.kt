@@ -15,138 +15,46 @@ import java.net.InetAddress
 import java.time.ZoneOffset
 
 fun Application.installGlobalErrorHandling(ds: HikariDataSource) {
-    val ERROR_LOG_QUERY = "INSERT INTO error_logs (error_code, error_message, timestamp, api_occurred, system_occurred) VALUES (?, ?, ?, ?, ?)"
-
     install(StatusPages) {
         exception<SerializationException> { call, cause ->
-            // Log error to database
-            val errorCode = 400
-            val errorMessage = "Invalid JSON: ${cause.localizedMessage}"
-            val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
-            val apiOccurred = call.request.path()
-            val systemOccurred = InetAddress.getLocalHost().hostName
-
-            // Call a function to log the error to the database
-            ds.connection.use { conn ->
-                conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
-                    stmt.setInt(1, errorCode)
-                    stmt.setString(2, errorMessage)
-                    stmt.setTimestamp(3, timestamp)
-                    stmt.setString(4, apiOccurred)
-                    stmt.setString(5, systemOccurred)
-
-                    stmt.executeUpdate()
-                }
-            }
-
-            // Convert exception to HTTP response call
-            call.respond(
-                HttpStatusCode.BadRequest, GlobalResponse(400, false, "Invalid JSON: ${cause.localizedMessage}")
-            )
+            logError(ds, call, cause, HttpStatusCode.BadRequest, 400, "Invalid JSON: ${cause.localizedMessage}")
         }
         exception<CannotTransformContentToTypeException> { call, cause ->
-            // Log error to database
-            val errorCode = 400
-            val errorMessage = "Wrong input: ${cause.localizedMessage}"
-            val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
-            val apiOccurred = call.request.path()
-            val systemOccurred = InetAddress.getLocalHost().hostName
-
-            // Call a function to log the error to the database
-            ds.connection.use { conn ->
-                conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
-                    stmt.setInt(1, errorCode)
-                    stmt.setString(2, errorMessage)
-                    stmt.setTimestamp(3, timestamp)
-                    stmt.setString(4, apiOccurred)
-                    stmt.setString(5, systemOccurred)
-
-                    stmt.executeUpdate()
-                }
-            }
-
-            call.respond(
-                HttpStatusCode.BadRequest, GlobalResponse(400, false, "Wrong input: ${cause.localizedMessage}")
-            )
+            logError(ds, call, cause, HttpStatusCode.BadRequest, 400, "Wrong input: ${cause.localizedMessage}")
         }
         exception<NumberFormatException> { call, cause ->
-            // Log error to database
-            val errorCode = 400
-            val errorMessage = "Invalid number format: ${cause.localizedMessage}"
-            val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
-            val apiOccurred = call.request.path()
-            val systemOccurred = InetAddress.getLocalHost().hostName
-
-            // Call a function to log the error to the database
-            ds.connection.use { conn ->
-                conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
-                    stmt.setInt(1, errorCode)
-                    stmt.setString(2, errorMessage)
-                    stmt.setTimestamp(3, timestamp)
-                    stmt.setString(4, apiOccurred)
-                    stmt.setString(5, systemOccurred)
-
-                    stmt.executeUpdate()
-                }
-            }
-
-            call.respond(
-                HttpStatusCode.BadRequest,
-                GlobalResponse(400, false, "Invalid number format: ${cause.localizedMessage}")
-            )
+            logError(ds, call, cause, HttpStatusCode.BadRequest, 400, "Invalid number format: ${cause.localizedMessage}")
         }
         exception<BadRequestException> { call, cause ->
-            // Log error to database
-            val errorCode = 400
-            val errorMessage = cause.message ?: "Bad request"
-            val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
-            val apiOccurred = call.request.path()
-            val systemOccurred = InetAddress.getLocalHost().hostName
-
-            // Call a function to log the error to the database
-            ds.connection.use { conn ->
-                conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
-                    stmt.setInt(1, errorCode)
-                    stmt.setString(2, errorMessage)
-                    stmt.setTimestamp(3, timestamp)
-                    stmt.setString(4, apiOccurred)
-                    stmt.setString(5, systemOccurred)
-
-                    stmt.executeUpdate()
-                }
-            }
-
-            call.respond(
-                HttpStatusCode.BadRequest, GlobalResponse(
-                    code = 400, status = false, message = cause.message ?: "Bad request"
-                )
-            )
+            logError(ds, call, cause, HttpStatusCode.BadRequest, 400, cause.message ?: "Bad request")
         }
         exception<Throwable> { call, cause ->
-            // Log error to database
-            val errorCode = 500
-            val errorMessage = "Server error: ${cause.localizedMessage}"
-            val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
-            val apiOccurred = call.request.path()
-            val systemOccurred = InetAddress.getLocalHost().hostName
-
-            // Call a function to log the error to the database
-            ds.connection.use { conn ->
-                conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
-                    stmt.setInt(1, errorCode)
-                    stmt.setString(2, errorMessage)
-                    stmt.setTimestamp(3, timestamp)
-                    stmt.setString(4, apiOccurred)
-                    stmt.setString(5, systemOccurred)
-
-                    stmt.executeUpdate()
-                }
-            }
-
-            call.respond(
-                HttpStatusCode.InternalServerError,
-                GlobalResponse(500, false, "Server error: ${cause.localizedMessage}")
-            )
+            logError(ds, call, cause, HttpStatusCode.InternalServerError, 500, "Server error: ${cause.localizedMessage}")
         }
     }
+}
+
+private suspend fun logError(ds: HikariDataSource, call: ApplicationCall, cause: Throwable, status: HttpStatusCode, errorCode: Int, errorMessage: String) {
+    val ERROR_LOG_QUERY = "INSERT INTO error_logs (error_code, error_message, timestamp, api_occurred, system_occurred) VALUES (?, ?, ?, ?, ?)"
+
+    // Log error to database
+    val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
+    val apiOccurred = call.request.path()
+    val systemOccurred = InetAddress.getLocalHost().hostName
+
+    // Call a function to log the error to the database
+    ds.connection.use { conn ->
+        conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
+            stmt.setInt(1, errorCode)
+            stmt.setString(2, errorMessage)
+            stmt.setTimestamp(3, timestamp)
+            stmt.setString(4, apiOccurred)
+            stmt.setString(5, systemOccurred)
+
+            stmt.executeUpdate()
+        }
+    }
+
+    // Convert exception to HTTP response call
+    call.respond(status, GlobalResponse(errorCode, false, errorMessage))
 }
