@@ -30,6 +30,18 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val ds = Config().getConnection()
+
+    monitor.subscribe(ApplicationStarted) { application ->
+        application.environment.log.info("Server is started")
+    }
+
+    monitor.subscribe(ApplicationStopped) { application ->
+        application.environment.log.info("Server is stopped")
+        // Release resources and unsubscribe from events
+        monitor.unsubscribe(ApplicationStarted) {}
+        monitor.unsubscribe(ApplicationStopped) {}
+    }
+
     val bearerToken = ds.connection.use { conn ->
         conn.prepareCall(TodoQuery.GET_BEARER_TOKEN)
             .executeQuery()
@@ -62,6 +74,7 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
-    installGlobalErrorHandling()
+    configureMonitoring()
+    installGlobalErrorHandling(ds)
     configureRouting(ds)
 }

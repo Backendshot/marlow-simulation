@@ -65,5 +65,16 @@ dependencies {
     testImplementation(libs.assertj.core)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
+    //For Telemetry and Monitoring
+//    implementation(project(":core"))
+    implementation(libs.ktor.server.metrics)
+    implementation(libs.cohort.ktor)
+    implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.call.id)
+    //OpenAPI
+    api(libs.opentelemetry.sdk.extension.autoconfigure)
+    api(libs.opentelemetry.semconv)
+    api(libs.opentelemetry.exporter.otlp)
+    api(libs.opentelemetry.ktor)
     implementation(libs.ktor.server.status.pages)
 }
