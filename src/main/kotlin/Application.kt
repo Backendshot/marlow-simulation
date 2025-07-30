@@ -50,15 +50,6 @@ fun Application.module() {
         }
     }
 
-    install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = false
-            ignoreUnknownKeys = false
-            coerceInputValues = false
-        })
-    }
-
     configureSerialization()
     configureSecurity()
     configureHTTP()
