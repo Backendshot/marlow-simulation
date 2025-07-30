@@ -12,6 +12,7 @@ import java.sql.Timestamp
 import java.time.LocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 
 class LoginController(ds: HikariDataSource) {
     val connection = ds.connection
@@ -96,13 +97,18 @@ class LoginController(ds: HikariDataSource) {
                 val query = connection.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY)
                 query.setInt(1, user_id)
                 val result = query.executeQuery()
+
+                val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm")
+
                 while (result.next()) {
                     val id = result.getInt("id")
                     val userId = result.getInt("user_id")
-                    val timestamp = result.getDate("timestamp").toString()
+                    val timestampRaw = result.getTimestamp("timestamp")
+                    val timestamp = formatter.format(timestampRaw)
                     val browser = result.getString("browser")
                     auditList.add(AuditModel(id, userId, timestamp, browser))
                 }
+
                 return@withContext auditList
             }
 

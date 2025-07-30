@@ -81,21 +81,21 @@ class TodoController(private val ds: HikariDataSource) {
         return@withContext data
     }
 
-    suspend fun readTodoById(id: Int): Todo = withContext(Dispatchers.IO) {
+    suspend fun viewAllTodosById(user_id: Int): List<Todo> = withContext(Dispatchers.IO) {
+        val todos = mutableListOf<Todo>()
         val query = ds.connection.prepareStatement(TodoQuery.GET_TODO_BY_ID)
-        query.setInt(1, id)
+        query.setInt(1, user_id)
         val result = query.executeQuery()
-        if (result.next()) {
-            val userId: Int = result.getInt("user_id")
-            val id: Int = result.getInt("id")
+        while (result.next()) {
+            val userId = result.getInt("user_id")
+            val id = result.getInt("id")
             val title = result.getString("title")
             val completed = result.getBoolean("completed")
-            return@withContext Todo(userId, id, title, completed)
-        } else {
-            throw kotlin.Exception("Record not found")
+            todos.add(Todo(userId, id, title, completed))
         }
-
+        return@withContext todos
     }
+
 
     suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(Dispatchers.IO) {
         if (id != todo.id) {
