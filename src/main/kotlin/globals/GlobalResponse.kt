@@ -8,5 +8,6 @@ data class GlobalResponse(
     val code: Int,
     val status: Boolean,
     val message: String,
-    val data: JsonElement? = null
+    val data: JsonElement? = null,
+    val errors: Map<String, List<String>>? = null
 )
