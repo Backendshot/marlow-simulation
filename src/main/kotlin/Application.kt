@@ -5,6 +5,7 @@ import com.marlow.LoginSystem.query.LoginQuery
 import com.marlow.LoginSystem.util.LoginJWT
 import com.marlow.configuration.Config
 import com.marlow.configuration.configureHTTP
+import com.marlow.configuration.configureMonitoring
 import com.marlow.configuration.configureRouting
 import com.marlow.configuration.configureSecurity
 import com.marlow.configuration.configureSerialization
@@ -38,6 +39,18 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val ds = Config().getConnection()
+
+    monitor.subscribe(ApplicationStarted) { application ->
+        application.environment.log.info("Server is started")
+    }
+
+    monitor.subscribe(ApplicationStopped) { application ->
+        application.environment.log.info("Server is stopped")
+        // Release resources and unsubscribe from events
+        monitor.unsubscribe(ApplicationStarted) {}
+        monitor.unsubscribe(ApplicationStopped) {}
+    }
+
     install(Authentication) {
         bearer("auth-bearer") {
             realm = "Access to the '/' path"
@@ -49,19 +62,14 @@ fun Application.module() {
                         ds.connection.use { conn ->
                             conn.prepareStatement(LoginQuery.GET_BEARER_TOKEN).use { stmt ->
                                 stmt.setInt(1, userId)
-                                val rs = stmt.executeQuery()
-                                var valid = false
-                                while (rs.next()) {
-                                    val storedToken = rs.getString("jwt_token")
-                                    if (storedToken == tokenCredential.token) {
-                                        valid = true
-                                        break
-                                    }
+                                //since this is the last statement, this will return any values resulting from the function call below (a boolean)
+                                stmt.executeQuery().use { rs ->
+                                    //lazily (don't retrieve until needed) get the jwt_token
+                                    generateSequence { if (rs.next()) rs.getString("jwt_token") else null }
+                                        .any { it == tokenCredential.token } //if the token retrieved doesn't match with the tokenCredential
                                 }
-                                valid
                             }
                         }
-
                     if (isValidToken) {
                         UserIdPrincipal(userId.toString())
                     } else {
@@ -89,6 +97,7 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
-    installGlobalErrorHandling()
+    configureMonitoring()
+    installGlobalErrorHandling(ds)
     configureRouting(ds)
 }
