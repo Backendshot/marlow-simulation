@@ -11,6 +11,7 @@ import io.ktor.http.*
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -43,9 +44,25 @@ fun Route.todoRouting(ds: HikariDataSource) {
             call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).readAllTodos()))
         }
 
-        get("read/{id?}") {
-            val id = call.requireIntParam("id")
-            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).readTodoById(id)))
+
+        get("read/{user_id?}") {
+            try {
+                val userId =
+                    call.parameters["user_id"]?.toIntOrNull()
+                        ?: throw IllegalArgumentException("Invalid User ID")
+                val todos = TodoController(ds).viewAllTodosById(userId)
+                call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todos))
+            } catch (e: IllegalArgumentException) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    GlobalResponse(400, false, e.message ?: "Invalid request")
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    GlobalResponse(500, false, e.localizedMessage)
+                )
+            }
         }
 
         post("create") {
