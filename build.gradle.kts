@@ -82,5 +82,6 @@ dependencies {
     api(libs.opentelemetry.semconv)
     api(libs.opentelemetry.exporter.otlp)
     api(libs.opentelemetry.ktor)
+    api(libs.opentelemetry.exporter.logging)
     implementation(libs.ktor.server.status.pages)
 }

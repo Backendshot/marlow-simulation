@@ -1,39 +1,46 @@
 package com.marlow.configuration
 
+import com.codahale.metrics.Slf4jReporter
 import com.sksamuel.cohort.Cohort
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.metrics.dropwizard.DropwizardMetrics
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.instrumentation.ktor.v3_0.KtorServerTelemetry
+import java.util.concurrent.TimeUnit
 
 fun Application.configureMonitoring() {
-//    val openTelemetry = getOpenTelemetry(serviceName = "opentelemetry-ktor-marlow-simulation")
+    val openTelemetry = getOpenTelemetry(serviceName = "opentelemetry-ktor-marlow-simulation")
 
-//    install(KtorServerTelemetry) {
-////        setOpenTelemetry(openTelemetry)
-//
-//        capturedRequestHeaders(HttpHeaders.UserAgent)
-//
-//        spanKindExtractor {
-//            if (httpMethod == HttpMethod.Post) {
-//                SpanKind.PRODUCER
-//            } else {
-//                SpanKind.CLIENT
-//            }
-//        }
-//
-//        attributesExtractor {
-//            onStart {
-//                attributes.put("start-time", System.currentTimeMillis())
-//            }
-//            onEnd {
-//                attributes.put("end-time", System.currentTimeMillis())
-//            }
-//        }
-//    }
+    install(KtorServerTelemetry) {
+        setOpenTelemetry(openTelemetry)
+
+        capturedRequestHeaders(HttpHeaders.UserAgent)
+
+        spanKindExtractor {
+            if (httpMethod == HttpMethod.Post) {
+                SpanKind.PRODUCER
+            } else {
+                SpanKind.CLIENT
+            }
+        }
+
+        attributesExtractor {
+            onStart {
+                attributes.put("start-time", System.currentTimeMillis())
+            }
+            onEnd {
+                attributes.put("end-time", System.currentTimeMillis())
+            }
+        }
+    }
+
+    //Uncomment for metrics via Dropwizard
 //    install(DropwizardMetrics) {
 //        Slf4jReporter.forRegistry(registry)
 //            .outputTo(this@configureMonitoring.log)
@@ -43,6 +50,7 @@ fun Application.configureMonitoring() {
 //            .start(10, TimeUnit.SECONDS)
 //    }
 
+    //Uncomment for healthhecks
 //    val healthchecks = HealthCheckRegistry(Dispatchers.Default) {
 //        register(FreememHealthCheck.mb(250), 10.seconds, 10.seconds)
 //        register(ProcessCpuHealthCheck(0.8), 10.seconds, 10.seconds)
@@ -68,7 +76,7 @@ fun Application.configureMonitoring() {
         // set to true to return the detailed status of the healthcheck response
         verboseHealthCheckResponse = true
 
-        // enable healthchecks for kubernetes
+        // uncomment to enable healthchecks for kubernetes
 //        healthcheck("/health", healthchecks)
     }
     install(CallId) {
