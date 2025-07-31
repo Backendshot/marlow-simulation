@@ -14,16 +14,12 @@ data class Todo(
 
 class TodoValidator {
 
-    // Sanitize input data by trimming whitespace from title
     fun sanitize(todo: Todo): Todo {
         return todo.copy(
             title = todo.title.trim()
         )
     }
 
-    /**
-     * Validates a Todo domain object.
-     */
     fun validate(todo: Todo): List<String> {
         return buildList {
             if (todo.title.isBlank()) add("Title cannot be blank.")
@@ -32,9 +28,6 @@ class TodoValidator {
         }
     }
 
-    /**
-     * Validates a JSON representation of a Todo.
-     */
     fun validate(json: JsonObject): List<String> {
         return buildList {
             json.ensureNumber("id")?.let { add(it) }
@@ -43,10 +36,6 @@ class TodoValidator {
         }
     }
 
-    /**
-     * Helper to check that a JSON property is a number.
-     * @return error message if invalid, null otherwise
-     */
     private fun JsonObject.ensureNumber(key: String): String? {
         val element = this[key]?.jsonPrimitive
             ?: return "$key is required and must be a JSON number"
@@ -55,10 +44,6 @@ class TodoValidator {
         } else null
     }
 
-    /**
-     * Helper to check that a JSON property is a boolean.
-     * @return error message if invalid, null otherwise
-     */
     private fun JsonObject.ensureBoolean(key: String): String? {
         val element = this[key]?.jsonPrimitive
             ?: return "$key is required and must be a JSON boolean"

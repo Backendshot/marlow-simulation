@@ -71,6 +71,7 @@ dependencies {
     testImplementation(libs.assertj.core)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
+    implementation("de.mkammerer:argon2-jvm:2.11")
     //For Telemetry and Monitoring
 //    implementation(project(":core"))
     implementation(libs.ktor.server.metrics)
