@@ -1,4 +1,4 @@
-package com.marlow.registrationSystem.models
+package com.marlow.registrationsystem.models
 
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
