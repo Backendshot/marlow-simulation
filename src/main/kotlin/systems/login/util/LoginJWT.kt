@@ -22,16 +22,14 @@ object LoginJWT {
 
     fun verifyAndExtractUserId(token: String): Int {
         val parts = token.split(".")
-        if (parts.size != 3) throw IllegalArgumentException("Invalid token format")
+        require(parts.size == 3) { "Invalid token format" }
 
         val (header, payload, signature) = parts
 
         val expectedSig = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(hmacSha256("$header.$payload", SECRET))
 
-        if (expectedSig != signature) {
-            throw IllegalArgumentException("Invalid token signature")
-        }
+        require(expectedSig == signature) { "Invalid token signature" }
 
         val jsonPayload = String(Base64.getUrlDecoder().decode(payload))
         val userIdRegex = Regex("\"userId\"\\s*:\\s*(\\d+)")
