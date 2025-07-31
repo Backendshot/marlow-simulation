@@ -1,17 +1,25 @@
 package com.marlow.todo.controller
 
 import com.marlow.client
-import com.marlow.todo.model.Todo
-import com.marlow.todo.model.TodoValidator
 import com.marlow.todo.query.TodoQuery
-import com.zaxxer.hikari.HikariDataSource
+import com.marlow.configuration.Config
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import com.marlow.todo.model.Todo
+import com.marlow.todo.model.TodoValidator
+import com.zaxxer.hikari.HikariDataSource
+import java.net.URL
 import java.sql.Types
+import kotlin.collections.find
+import kotlin.collections.flatMap
+import kotlin.collections.joinToString
+import kotlin.collections.map
+import kotlin.text.isEmpty
+import kotlin.use
 
 class TodoController(private val ds: HikariDataSource, private val dispatcher: CoroutineDispatcher = Dispatchers.IO) {
     val apiUrl = "https://jsonplaceholder.typicode.com/todos"
@@ -74,23 +82,23 @@ class TodoController(private val ds: HikariDataSource, private val dispatcher: C
         }
     }
 
-    suspend fun readTodoById(id: Int): Todo = withContext(dispatcher) {
+    suspend fun viewAllTodosById(user_id: Int): List<Todo> = withContext(Dispatchers.IO) {
+        val todos = mutableListOf<Todo>()
         ds.connection.use { conn ->
             conn.prepareStatement(TodoQuery.GET_TODO_BY_ID).use { stmt ->
-                stmt.setInt(1, id)
+                stmt.setInt(1, user_id)
                 stmt.executeQuery().use { rs ->
-                    if (rs.next()) {
+                    while (rs.next()) {
                         val userId: Int = rs.getInt("user_id")
                         val id: Int = rs.getInt("id")
                         val title = rs.getString("title")
                         val completed = rs.getBoolean("completed")
-                        return@withContext Todo(userId, id, title, completed)
-                    } else {
-                        throw kotlin.Exception("Record not found")
+                        todos.add(Todo(userId, id, title, completed))
                     }
                 }
             }
         }
+        return@withContext todos
     }
 
     suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(dispatcher) {
