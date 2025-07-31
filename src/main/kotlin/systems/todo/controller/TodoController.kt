@@ -56,6 +56,7 @@ class TodoController(
                         it.setInt(1, sanitizedTodo.userId)
                         it.setString(2, sanitizedTodo.title)
                         it.setBoolean(3, sanitizedTodo.completed)
+                        it.setBoolean(4, sanitizedTodo.is_deleted)
 
                         val rowsInserted = it.executeUpdate()
 

@@ -9,7 +9,8 @@ data class Todo(
     val userId: Int,
     val id: Int? = null,
     val title: String,
-    val completed: Boolean
+    val completed: Boolean,
+    val is_deleted: Boolean = false
 )
 
 class TodoValidator {
