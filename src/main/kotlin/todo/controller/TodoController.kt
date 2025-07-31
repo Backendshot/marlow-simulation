@@ -5,6 +5,7 @@ import com.marlow.todo.query.TodoQuery
 import com.marlow.configuration.Config
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -20,11 +21,11 @@ import kotlin.collections.map
 import kotlin.text.isEmpty
 import kotlin.use
 
-class TodoController(private val ds: HikariDataSource) {
+class TodoController(private val ds: HikariDataSource, private val dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+    val apiUrl = "https://jsonplaceholder.typicode.com/todos"
+    val todoRetrieveFail = "Failed to retrieve todos"
 
-//    val connection = Config().createDataSource() //.connect()
-
-    suspend fun createTodo(todo: Todo): Pair<Int, Int> = withContext(Dispatchers.IO) {
+    suspend fun createTodo(todo: Todo): Pair<Int, Int> = withContext(dispatcher) {
         // Check duplicates
         ds.connection.use { conn ->
             conn.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO).use { duplicateStmt ->
@@ -49,7 +50,6 @@ class TodoController(private val ds: HikariDataSource) {
             throw Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
         }
 
-        var count: Int
         val rowsInserted = ds.connection.use { conn ->
             conn.prepareStatement(TodoQuery.INSERT_TODO).use { stmt ->
                 stmt.setInt(1, sanitizedTodo.userId)
@@ -57,47 +57,51 @@ class TodoController(private val ds: HikariDataSource) {
                 stmt.setString(3, sanitizedTodo.title)
                 stmt.setBoolean(4, sanitizedTodo.completed)
                 stmt.execute()
-                count = stmt.updateCount
-
-                println(count) //currently returns -1 on successful update, but otherwise works with current logic
-
+                return@use stmt.updateCount //currently returns -1 on successful update, but otherwise works with current logic
             }
         }
 
-        return@withContext todo.id to count
+        return@withContext todo.id to rowsInserted
     }
 
-    suspend fun readAllTodos(): MutableList<Todo> = withContext(Dispatchers.IO) {
+    suspend fun readAllTodos(): MutableList<Todo> = withContext(dispatcher) {
         val data = mutableListOf<Todo>()
-        val query = ds.connection.prepareStatement(TodoQuery.GET_ALL_TODOS)
-        val result = query.executeQuery()
-        while (result.next()) {
-            val userId: Int = result.getInt("user_id")
-            val id: Int = result.getInt("id")
-            val title = result.getString("title")
-            val completed = result.getBoolean("completed")
-            data.add(Todo(userId, id, title, completed))
+        ds.connection.use { conn ->
+            conn.prepareStatement(TodoQuery.GET_ALL_TODOS).use { stmt ->
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val userId: Int = rs.getInt("user_id")
+                        val id: Int = rs.getInt("id")
+                        val title = rs.getString("title")
+                        val completed = rs.getBoolean("completed")
+                        data.add(Todo(userId, id, title, completed))
+                    }
+                    return@withContext data
+                }
+            }
         }
-        return@withContext data
     }
 
-    suspend fun readTodoById(id: Int): Todo = withContext(Dispatchers.IO) {
-        val query = ds.connection.prepareStatement(TodoQuery.GET_TODO_BY_ID)
-        query.setInt(1, id)
-        val result = query.executeQuery()
-        if (result.next()) {
-            val userId: Int = result.getInt("user_id")
-            val id: Int = result.getInt("id")
-            val title = result.getString("title")
-            val completed = result.getBoolean("completed")
-            return@withContext Todo(userId, id, title, completed)
-        } else {
-            throw kotlin.Exception("Record not found")
+    suspend fun viewAllTodosById(user_id: Int): List<Todo> = withContext(Dispatchers.IO) {
+        val todos = mutableListOf<Todo>()
+        ds.connection.use { conn ->
+            conn.prepareStatement(TodoQuery.GET_TODO_BY_ID).use { stmt ->
+                stmt.setInt(1, user_id)
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val userId: Int = rs.getInt("user_id")
+                        val id: Int = rs.getInt("id")
+                        val title = rs.getString("title")
+                        val completed = rs.getBoolean("completed")
+                        todos.add(Todo(userId, id, title, completed))
+                    }
+                }
+            }
         }
-
+        return@withContext todos
     }
 
-    suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(Dispatchers.IO) {
+    suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(dispatcher) {
         if (id != todo.id) {
             throw kotlin.Exception("id to be updated must match api request")
         }
@@ -111,38 +115,39 @@ class TodoController(private val ds: HikariDataSource) {
             throw kotlin.Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
         }
 
-        val result = ds.connection.prepareCall(TodoQuery.UPDATE_TODO).use { stmt ->
-            stmt.setInt(1, sanitizedTodo.userId)
-            stmt.setInt(2, id)
-            stmt.setString(3, sanitizedTodo.title)
-            stmt.setBoolean(4, sanitizedTodo.completed)
-            stmt.registerOutParameter(5, Types.INTEGER)
-            stmt.execute()
-
-            return@use stmt.getInt(5)
+        ds.connection.use { conn ->
+            conn.prepareCall(TodoQuery.UPDATE_TODO).use { stmt ->
+                stmt.setInt(1, todo.userId)
+                stmt.setInt(2, id)
+                stmt.setString(3, todo.title)
+                stmt.setBoolean(4, todo.completed)
+                stmt.registerOutParameter(5, Types.INTEGER)
+                stmt.execute()
+                stmt.getInt(5)
+            }
         }
-
-        return@withContext result
     }
 
-    suspend fun deleteTodo(id: Int): Int = withContext(Dispatchers.IO) {
-        val result = ds.connection.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
-            stmt.setInt(1, id)
-            stmt.registerOutParameter(2, Types.INTEGER)
+    suspend fun deleteTodo(id: Int): Int = withContext(dispatcher) {
+        ds.connection.use { conn ->
+            conn.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
+                stmt.setInt(1, id)
+                stmt.registerOutParameter(2, Types.INTEGER)
 
-            stmt.execute()
-            return@use stmt.getInt(2)
+                stmt.execute()
+                stmt.getInt(2)
+            }
         }
 
         //Todo: add a message that indicates that the todo to be deleted does not exist
-        return@withContext result
+//        return@withContext result
     }
 
-    suspend fun fetchTodos(): List<Todo> = withContext(Dispatchers.IO) {
+    suspend fun fetchTodos(): List<Todo> = withContext(dispatcher) {
         try {
-            val response: List<Todo> = client.get("https://jsonplaceholder.typicode.com/todos").body()
+            val response: List<Todo> = client.get(apiUrl).body()
             if (response.isEmpty()) {
-                throw kotlin.Exception("Failed to retrieve todos")
+                throw kotlin.Exception(todoRetrieveFail)
             }
 
             val validator = TodoValidator()
@@ -163,12 +168,12 @@ class TodoController(private val ds: HikariDataSource) {
     }
 
 
-    suspend fun fetchTodoById(id: Int): Todo = withContext(Dispatchers.IO) {
+    suspend fun fetchTodoById(id: Int): Todo = withContext(dispatcher) {
         try {
-            val request: List<Todo> = client.get("https://jsonplaceholder.typicode.com/todos").body()
+            val request: List<Todo> = client.get(apiUrl).body()
             println(request)
             if (request.isEmpty()) {
-                throw kotlin.Exception("Failed to retrieve todos")
+                throw kotlin.Exception(todoRetrieveFail)
             }
             return@withContext request.find { it.id == id } ?: throw kotlin.Exception("Todo with id #$id not found")
         } catch (e: Exception) {
@@ -177,12 +182,11 @@ class TodoController(private val ds: HikariDataSource) {
         }
     }
 
-    suspend fun importTodoData(): Int = withContext(Dispatchers.IO) {
+    suspend fun importTodoData(): Int = withContext(dispatcher) {
         try {
-            val url = URL("https://jsonplaceholder.typicode.com/todos")
-            val request: String = client.get(url).body()
+            val request: String = client.get(apiUrl).body()
             if (request.isEmpty()) {
-                throw kotlin.Exception("Failed to retrieve todos")
+                throw kotlin.Exception(todoRetrieveFail)
             }
 
             val todos = Json.decodeFromString<List<Todo>>(request)
@@ -197,7 +201,7 @@ class TodoController(private val ds: HikariDataSource) {
                 println("Validation Errors: ${validationErrors.joinToString(", ")}")
             }
 
-            var insertCount = 0
+            var insertCount: Int
             ds.connection.use { conn ->
                 conn.prepareCall(TodoQuery.INSERT_TODO).use { stmt ->
                     for (todo in sanitizedTodos) {
