@@ -1,25 +1,21 @@
 package com.marlow
 
-import com.marlow.plugin.installGlobalErrorHandling
-import com.marlow.LoginSystem.query.LoginQuery
-import com.marlow.LoginSystem.util.LoginJWT
-import com.marlow.configuration.Config
-import com.marlow.configuration.configureHTTP
-import com.marlow.configuration.configureMonitoring
-import com.marlow.configuration.configureRouting
-import com.marlow.configuration.configureSecurity
-import com.marlow.configuration.configureSerialization
-import com.marlow.todo.query.TodoQuery
+import com.marlow.configs.Config
+import com.marlow.configs.configureHTTP
+import com.marlow.configs.configureMonitoring
+import com.marlow.configs.configureRouting
+import com.marlow.configs.configureSecurity
+import com.marlow.configs.configureSerialization
+import com.marlow.systems.login.query.LoginQuery
+import com.marlow.systems.login.util.LoginJWT
+import com.marlow.plugins.installGlobalErrorHandling
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.netty.*
 import kotlinx.serialization.json.Json
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.UserIdPrincipal
-import io.ktor.server.auth.bearer
-
-import io.ktor.server.netty.EngineMain
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
@@ -82,17 +78,6 @@ fun Application.module() {
                 }
             }
         }
-    }
-
-    install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) {
-        json(
-                Json {
-                    prettyPrint = true
-                    isLenient = false
-                    ignoreUnknownKeys = false
-                    coerceInputValues = false
-                }
-        )
     }
 
     configureSerialization()
