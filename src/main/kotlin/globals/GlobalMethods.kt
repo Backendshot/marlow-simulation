@@ -47,19 +47,15 @@ class GlobalMethods {
         val originalName      = part.originalFileName ?: ""
         val extension         = File(originalName).extension.lowercase()
 
-        if (extension !in allowedExtensions) {
-            throw IllegalArgumentException("Invalid image type: .$extension is not allowed.")
-        }
+        require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
 
         val inputStream    = part.streamProvider()
         val byteArray      = inputStream.readBytes()
         val maxSizeInBytes = 2 * 1024 * 1024
 
-        if (byteArray.size > maxSizeInBytes) {
-            throw IllegalArgumentException("File size exceeds 2MB limit.")
-        }
+        require(byteArray.size <= maxSizeInBytes) { "File size exceeds 2MB limit."}
 
-        val fileName = UUID.randomUUID().toString() + "." + extension
+            val fileName = UUID.randomUUID().toString() + "." + extension
         val filePath = "image_uploads/$fileName"
 
         File(filePath).apply {
