@@ -11,12 +11,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import com.marlow.todo.model.Todo
-import com.marlow.todo.model.TodoValidator
-import com.marlow.todo.query.TodoQuery
-import com.zaxxer.hikari.HikariDataSource
-import io.ktor.client.call.*
-import io.ktor.client.request.*
 import java.sql.Statement
 import java.sql.Types
 import kotlin.collections.List
@@ -29,10 +23,6 @@ import kotlin.collections.map
 import kotlin.collections.mutableListOf
 import kotlin.text.isEmpty
 import kotlin.use
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 
 class TodoController(
         private val ds: HikariDataSource,
