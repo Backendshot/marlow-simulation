@@ -10,7 +10,6 @@ import java.util.*
 
 
 class Config {
-    //TODO: HikariCP and pgBouncer
     fun connect(): Connection {
         val dotenv   = dotenv()
         val database = dotenv["DB_DATABASE"]
