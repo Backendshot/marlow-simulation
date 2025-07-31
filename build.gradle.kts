@@ -84,4 +84,5 @@ dependencies {
     api(libs.opentelemetry.ktor)
     api(libs.opentelemetry.exporter.logging)
     implementation(libs.ktor.server.status.pages)
+    implementation("com.sun.mail:jakarta.mail:2.0.1")
 }

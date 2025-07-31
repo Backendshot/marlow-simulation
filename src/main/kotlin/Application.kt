@@ -16,6 +16,14 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.netty.*
 import kotlinx.serialization.json.Json
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.bearer
+
+import io.ktor.server.netty.EngineMain
 
 val client = HttpClient(CIO) {
     install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
