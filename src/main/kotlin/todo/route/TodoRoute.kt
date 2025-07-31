@@ -112,5 +112,16 @@ fun Route.todoRouting(ds: HikariDataSource) {
                     GlobalResponse(200, true, "Todo deleted successfully.")
             )
         }
+
+        patch("delete-table/{id?}") {
+            val id = call.requireIntParam("id")
+            if (TodoController(ds).updateDeleteStatus(id) == 0) {
+                throw Exception("Deletion of table not successful, please try again.")
+            }
+            call.respond(
+                    status = HttpStatusCode.OK,
+                    GlobalResponse(200, true, "Table marked as deleted successfully.")
+            )
+        }
     }
 }

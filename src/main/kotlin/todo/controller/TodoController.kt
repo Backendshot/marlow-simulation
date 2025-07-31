@@ -124,6 +124,15 @@ class TodoController(
                     }
                 }
             }
+    suspend fun updateDeleteStatus(id: Int): Int =
+            withContext(dispatcher) {
+                ds.connection.use { conn ->
+                    conn.prepareStatement(TodoQuery.DELETE_TABLE_QUERY).use { stmt ->
+                        stmt.setInt(1, id)
+                        return@use stmt.executeUpdate()
+                    }
+                }
+            }
 
     suspend fun deleteTodo(id: Int): Int =
             withContext(dispatcher) {
