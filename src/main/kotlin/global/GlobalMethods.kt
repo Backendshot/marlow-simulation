@@ -1,6 +1,6 @@
 package com.marlow.global
 
-import com.marlow.registrationSystem.queries.UserQuery
+import com.marlow.registrationsystem.queries.UserQuery
 import de.mkammerer.argon2.Argon2Factory
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.HttpClient
@@ -120,18 +120,5 @@ class GlobalMethods {
         transport.connect("smtp.gmail.com", userEmail, accessToken)
         transport.sendMessage(message, message.allRecipients)
         transport.close()
-    }
-
-    fun loadEmailTemplate(templateName: String, replacements: Map<String, String>): String {
-        val inputStream = this::class.java.getResourceAsStream("/templates/$templateName")
-            ?: throw IllegalArgumentException("Template file not found: $templateName")
-
-        var template = inputStream.bufferedReader().use { it.readText() }
-
-        replacements.forEach { (key, value) ->
-            template = template.replace("{{${key}}}", value)
-        }
-
-        return template
     }
 }

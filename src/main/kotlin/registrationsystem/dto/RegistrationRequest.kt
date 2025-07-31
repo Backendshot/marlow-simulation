@@ -1,4 +1,4 @@
-package com.marlow.registrationSystem.dto
+package com.marlow.registrationsystem.dto
 
 import kotlinx.serialization.Serializable
 

@@ -1,20 +1,24 @@
-package com.marlow.registrationSystem.controllers
+package com.marlow.registrationsystem.controllers
 
 import com.marlow.global.GlobalMethods
 import com.marlow.global.RegistrationResult
-import com.marlow.registrationSystem.dto.RegistrationRequest
-import com.marlow.registrationSystem.models.CredentialsModel
-import com.marlow.registrationSystem.models.EmailSendingModel
-import com.marlow.registrationSystem.models.InformationModel
-import com.marlow.registrationSystem.queries.UserQuery
-import com.marlow.todo.query.TodoQuery
+import com.marlow.registrationsystem.dto.RegistrationRequest
+import com.marlow.registrationsystem.models.CredentialsModel
+import com.marlow.registrationsystem.models.EmailSendingModel
+import com.marlow.registrationsystem.models.InformationModel
+import com.marlow.registrationsystem.queries.UserQuery
 import com.zaxxer.hikari.HikariDataSource
 import io.github.cdimascio.dotenv.dotenv
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.server.application.*
 import io.ktor.server.request.*
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class RegistrationController (private val ds: HikariDataSource) {
     suspend fun register(call: ApplicationCall): RegistrationResult {
@@ -23,8 +27,8 @@ class RegistrationController (private val ds: HikariDataSource) {
             val multipart  = call.receiveMultipart()
             val formFields = mutableMapOf<String, String>()
             val now        = LocalDate.now()
-            var imageFileName: String? = null
 
+            var imageFileName: String? = null
             multipart.forEachPart { part ->
                 when (part) {
                     is PartData.FormItem -> {
@@ -81,18 +85,21 @@ class RegistrationController (private val ds: HikariDataSource) {
                 return RegistrationResult.Conflict("Username already exists.")
             }
 
-            val insertInfo = ds.connection.prepareCall(UserQuery.INSERT_INFORMATION)
-            insertInfo.setString(1, information.username)
-            insertInfo.setString(2, information.firstName)
-            insertInfo.setString(3, information.middleName)
-            insertInfo.setString(4, information.lastName)
-            insertInfo.setString(5, information.email)
-            insertInfo.setObject(6, information.birthday)
-            insertInfo.setObject(7, information.createdAt)
-            insertInfo.setObject(8, information.updatedAt)
-            insertInfo.setString(9, information.roleType)
-            insertInfo.setString(10, information.image)
-            insertInfo.execute()
+            ds.connection.use { conn ->
+                conn.prepareCall(UserQuery.INSERT_INFORMATION).use { stmt ->
+                    stmt.setString(1, information.username)
+                    stmt.setString(2, information.firstName)
+                    stmt.setString(3, information.middleName)
+                    stmt.setString(4, information.lastName)
+                    stmt.setString(5, information.email)
+                    stmt.setObject(6, information.birthday)
+                    stmt.setObject(7, information.createdAt)
+                    stmt.setObject(8, information.updatedAt)
+                    stmt.setString(9, information.roleType)
+                    stmt.setString(10, information.image)
+                    stmt.execute()
+                }
+            }
 
             val user = methods.getUserByUsername(ds.connection, information.username)
                 ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
@@ -110,15 +117,18 @@ class RegistrationController (private val ds: HikariDataSource) {
                 return RegistrationResult.ValidationError("Credentials validation failed.")
             }
 
-            val insertCred = ds.connection.prepareCall(UserQuery.INSERT_CREDENTIALS)
-            insertCred.setInt(1, credentials.userId)
-            insertCred.setString(2, credentials.username)
-            insertCred.setString(3, credentials.password)
-            insertCred.setBoolean(4, credentials.activeSession)
-            insertCred.setBoolean(5, credentials.activeSessionDeleted)
-            insertCred.setObject(6, credentials.createdAt)
-            insertCred.setObject(7, credentials.updatedAt)
-            insertCred.execute()
+            ds.connection.use { conn ->
+                conn.prepareCall(UserQuery.INSERT_CREDENTIALS).use { stmt ->
+                    stmt.setInt(1, credentials.userId)
+                    stmt.setString(2, credentials.username)
+                    stmt.setString(3, credentials.password)
+                    stmt.setBoolean(4, credentials.activeSession)
+                    stmt.setBoolean(5, credentials.activeSessionDeleted)
+                    stmt.setObject(6, credentials.createdAt)
+                    stmt.setObject(7, credentials.updatedAt)
+                    stmt.execute()
+                }
+            }
 
             val verificationLink = "http://localhost:8080/api/user/email/verify?userId=${user.id}"
             val dotEnv           = dotenv()
@@ -166,7 +176,6 @@ class RegistrationController (private val ds: HikariDataSource) {
             }
 
             val accessToken = methods.getAccessToken()
-            print("Preparing to send email...")
             methods.sendEmail(
                 recipient   = information.email,
                 subject     = emailLogs.subject,
@@ -175,6 +184,40 @@ class RegistrationController (private val ds: HikariDataSource) {
             )
 
             RegistrationResult.Success("User registered successfully.")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            RegistrationResult.Failure("Internal server error: ${e.message}")
+        }
+    }
+
+    fun verifyEmail(call: ApplicationCall): RegistrationResult {
+        val userIdParam = call.request.queryParameters["userId"] ?: return RegistrationResult.ValidationError("test")
+
+        val userId = userIdParam.toIntOrNull()
+        if (userId == null) {
+            return RegistrationResult.Failure("test")
+        }
+
+        val dateNow = LocalDate.now()
+
+        return try {
+            ds.connection.use { conn ->
+                ds.connection.use { conn ->
+                    conn.prepareCall(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
+                        stmt.setInt(1, userId)
+                        stmt.setObject(2, dateNow)
+
+
+                        val rows = stmt.executeUpdate()
+                        if (rows > 0) {
+                            RegistrationResult.Success("Email verification successful!")
+                        } else {
+                            RegistrationResult.Failure("User email log not found.")
+                        }
+                    }
+                }
+            }
+            RegistrationResult.Success("Email Verification Success!")
         } catch (e: Exception) {
             e.printStackTrace()
             RegistrationResult.Failure("Internal server error: ${e.message}")

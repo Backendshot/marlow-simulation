@@ -1,4 +1,4 @@
-package com.marlow.registrationSystem.queries
+package com.marlow.registrationsystem.queries
 
 class UserQuery {
     companion object {
@@ -7,5 +7,6 @@ class UserQuery {
         const val CHECK_USERNAME_EXISTS = "SELECT COUNT(*) AS count FROM tbl_information WHERE username = ?"
         const val GET_USER              = "SELECT id, email FROM tbl_information WHERE username = ?"
         const val INSERT_EMAIL_SENDING  = "CALL insert_email_sending(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        const val UPDATE_EMAIL_VERIFIED = "CALL update_email_verified(?, ?)"
     }
 }

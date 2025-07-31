@@ -1,4 +1,4 @@
-package com.marlow.registrationSystem.models
+package com.marlow.registrationsystem.models
 
 fun String.sanitizeInput(): String {
     return this
