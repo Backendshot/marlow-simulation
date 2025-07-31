@@ -14,16 +14,12 @@ data class Todo(
 
 class TodoValidator {
 
-    // Sanitize input data by trimming whitespace from title
     fun sanitize(todo: Todo): Todo {
         return todo.copy(
             title = todo.title.trim()
         )
     }
-
-    /**
-     * Validates a Todo domain object.
-     */
+    
     fun validate(todo: Todo): List<String> {
         return buildList {
             if (todo.title.isBlank()) add("Title cannot be blank.")
