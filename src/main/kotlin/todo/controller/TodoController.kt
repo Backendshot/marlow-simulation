@@ -13,6 +13,7 @@ import com.marlow.todo.model.Todo
 import com.marlow.todo.model.TodoValidator
 import com.zaxxer.hikari.HikariDataSource
 import java.net.URL
+import java.sql.Statement
 import java.sql.Types
 import kotlin.collections.find
 import kotlin.collections.flatMap
@@ -26,23 +27,11 @@ class TodoController(private val ds: HikariDataSource, private val dispatcher: C
     val todoRetrieveFail = "Failed to retrieve todos"
 
     suspend fun createTodo(todo: Todo): Pair<Int, Int> = withContext(dispatcher) {
-        // Check duplicates
-        ds.connection.use { conn ->
-            conn.prepareCall(TodoQuery.CHECK_DUPLICATE_TODO).use { duplicateStmt ->
-                duplicateStmt.setInt(1, todo.id)
-                duplicateStmt.executeQuery().use { rs ->
-                    rs.next()
-                        .takeIf { !rs.getBoolean(1) } //takeIf will null the value if the returned value is true (there *is* a duplicate id)
-                        ?: throw kotlin.Exception("Todo at id #${todo.id} already exists") //a null value results in an Exception being thrown
-                }
-            }
-        }
-
         // Validate
         val validator = TodoValidator()
         val sanitizedTodo = validator.sanitize(todo)
         val validationErrors = validator.validate(sanitizedTodo)
-        // Inspect and either print or throw
+
         if (validationErrors.isEmpty()) {
             println("✅ Validation passed! No errors found.")
             println("Sanitized and Validated Todo: $sanitizedTodo")
@@ -50,18 +39,27 @@ class TodoController(private val ds: HikariDataSource, private val dispatcher: C
             throw Exception("Validation Errors: ${validationErrors.joinToString(", ")}")
         }
 
-        val rowsInserted = ds.connection.use { conn ->
-            conn.prepareStatement(TodoQuery.INSERT_TODO).use { stmt ->
-                stmt.setInt(1, sanitizedTodo.userId)
-                stmt.setInt(2, sanitizedTodo.id)
-                stmt.setString(3, sanitizedTodo.title)
-                stmt.setBoolean(4, sanitizedTodo.completed)
-                stmt.execute()
-                return@use stmt.updateCount //currently returns -1 on successful update, but otherwise works with current logic
+        val conn = ds.connection
+        conn.use {
+            val stmt = it.prepareStatement(
+                TodoQuery.INSERT_TODO,
+                Statement.RETURN_GENERATED_KEYS
+            )
+            stmt.use {
+                it.setInt(1, sanitizedTodo.userId)
+                it.setString(2, sanitizedTodo.title)
+                it.setBoolean(3, sanitizedTodo.completed)
+
+                val rowsInserted = it.executeUpdate()
+
+                val rs = it.generatedKeys
+                val generatedId = if (rs.next()) rs.getInt(1) else null
+
+                if (generatedId == null) throw Exception("Failed to retrieve generated ID")
+
+                return@withContext generatedId to rowsInserted
             }
         }
-
-        return@withContext todo.id to rowsInserted
     }
 
     suspend fun readAllTodos(): MutableList<Todo> = withContext(dispatcher) {
@@ -206,9 +204,8 @@ class TodoController(private val ds: HikariDataSource, private val dispatcher: C
                 conn.prepareCall(TodoQuery.INSERT_TODO).use { stmt ->
                     for (todo in sanitizedTodos) {
                         stmt.setInt(1, todo.userId)
-                        stmt.setInt(2, todo.id)
-                        stmt.setString(3, todo.title)
-                        stmt.setBoolean(4, todo.completed)
+                        stmt.setString(2, todo.title)
+                        stmt.setBoolean(3, todo.completed)
                         stmt.addBatch()
                     }
                     val result = stmt.executeBatch()

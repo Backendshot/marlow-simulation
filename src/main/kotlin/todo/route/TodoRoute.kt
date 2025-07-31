@@ -68,12 +68,6 @@ fun Route.todoRouting(ds: HikariDataSource) {
         post("create") {
             val raw = call.receiveText()
             val element = Json.parseToJsonElement(raw)
-            val obj = element.jsonObject
-
-            val jsonValidationErrors = TodoValidator().validate(obj)
-            if (jsonValidationErrors.isNotEmpty()) {
-                throw BadRequestException("Invalid JSON Types: $jsonValidationErrors")
-            }
 
             val todo = Json.decodeFromJsonElement<Todo>(element)
             val (newId, rows) = TodoController(ds).createTodo(todo)
@@ -85,12 +79,6 @@ fun Route.todoRouting(ds: HikariDataSource) {
             val id = call.requireIntParam("id")
             val raw = call.receiveText()
             val element = Json.parseToJsonElement(raw)
-            val obj = element.jsonObject
-
-            val jsonValidationErrors = TodoValidator().validate(obj)
-            if (jsonValidationErrors.isNotEmpty()) {
-                throw BadRequestException("Invalid JSON Types: $jsonValidationErrors")
-            }
 
             val todo = Json.decodeFromJsonElement<Todo>(element)
             if (TodoController(ds).updateTodo(id, todo) == 0) throw Exception("Could not update Todo. Please try again.")
