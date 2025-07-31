@@ -1,36 +1,36 @@
 package com.marlow.systems.registration.controllers
 
+import com.marlow.globals.GlobalMethods
 import com.marlow.globals.RegistrationResult
 import com.marlow.systems.registration.dto.RegistrationRequest
 import com.marlow.systems.registration.models.CredentialsModel
+import com.marlow.systems.registration.models.EmailSendingModel
 import com.marlow.systems.registration.models.InformationModel
 import com.marlow.systems.registration.queries.UserQuery
 import com.zaxxer.hikari.HikariDataSource
-import de.mkammerer.argon2.Argon2Factory
+import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
-import java.io.File
-import java.sql.Connection
 import java.time.LocalDate
-import java.util.*
 
 class RegistrationController (private val ds: HikariDataSource) {
     suspend fun register(call: ApplicationCall): RegistrationResult {
         return try {
-            val multipart = call.receiveMultipart()
+            val methods    = GlobalMethods()
+            val multipart  = call.receiveMultipart()
             val formFields = mutableMapOf<String, String>()
-            var imageFileName: String? = null
-            val now = LocalDate.now()
+            val now        = LocalDate.now()
 
+            var imageFileName: String? = null
             multipart.forEachPart { part ->
                 when (part) {
                     is PartData.FormItem -> {
                         formFields[part.name.orEmpty()] = part.value
                     }
                     is PartData.FileItem -> {
-                        if (part.name == "image") {
-                            imageFileName = saveImage(part)
+                        if (part.name == "image" && !part.originalFileName.isNullOrBlank()) {
+                            imageFileName = methods.saveImage(part)
                         }
                     }
                     else -> {}
@@ -45,7 +45,7 @@ class RegistrationController (private val ds: HikariDataSource) {
                 lastName   = formFields["lastName"] ?: "",
                 roleType   = formFields["roleType"] ?: "",
                 email      = formFields["email"] ?: "",
-                birthday   = formFields["birthday"],
+                birthday   = formFields["birthday"] ?: "",
                 password   = formFields["password"] ?: "",
                 image      = imageFileName
             )
@@ -57,7 +57,7 @@ class RegistrationController (private val ds: HikariDataSource) {
                 lastName   = input.lastName,
                 roleType   = input.roleType,
                 email      = input.email,
-                birthday   = input.birthday?.let { LocalDate.parse(it) },
+                birthday   = input.birthday?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it) },
                 createdAt  = now,
                 updatedAt  = now,
                 image      = imageFileName
@@ -79,26 +79,29 @@ class RegistrationController (private val ds: HikariDataSource) {
                 return RegistrationResult.Conflict("Username already exists.")
             }
 
-            val insertInfo = ds.connection.prepareCall(UserQuery.INSERT_INFORMATION)
-            insertInfo.setString(1, information.username)
-            insertInfo.setString(2, information.firstName)
-            insertInfo.setString(3, information.middleName)
-            insertInfo.setString(4, information.lastName)
-            insertInfo.setString(5, information.email)
-            insertInfo.setObject(6, information.birthday)
-            insertInfo.setObject(7, information.createdAt)
-            insertInfo.setObject(8, information.updatedAt)
-            insertInfo.setString(9, information.roleType)
-            insertInfo.setString(10, information.image)
-            insertInfo.execute()
+            ds.connection.use { conn ->
+                conn.prepareCall(UserQuery.INSERT_INFORMATION).use { stmt ->
+                    stmt.setString(1, information.username)
+                    stmt.setString(2, information.firstName)
+                    stmt.setString(3, information.middleName)
+                    stmt.setString(4, information.lastName)
+                    stmt.setString(5, information.email)
+                    stmt.setObject(6, information.birthday)
+                    stmt.setObject(7, information.createdAt)
+                    stmt.setObject(8, information.updatedAt)
+                    stmt.setString(9, information.roleType)
+                    stmt.setString(10, information.image)
+                    stmt.execute()
+                }
+            }
 
-            val userId = getUserIdByUsername(ds.connection, information.username)
+            val user = methods.getUserByUsername(ds.connection, information.username)
                 ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
 
             val credentials = CredentialsModel(
-                userId    = userId,
+                userId    = user.id,
                 username  = information.username,
-                password  = hashPassword(input.password),
+                password  = methods.hashPassword(input.password),
                 createdAt = now,
                 updatedAt = now
             ).sanitized()
@@ -108,51 +111,110 @@ class RegistrationController (private val ds: HikariDataSource) {
                 return RegistrationResult.ValidationError("Credentials validation failed.")
             }
 
-            val insertCred = ds.connection.prepareCall(UserQuery.INSERT_CREDENTIALS)
-            insertCred.setInt(1, credentials.userId)
-            insertCred.setString(2, credentials.username)
-            insertCred.setString(3, credentials.password)
-            insertCred.setBoolean(4, credentials.activeSession)
-            insertCred.setBoolean(5, credentials.activeSessionDeleted)
-            insertCred.setObject(6, credentials.createdAt)
-            insertCred.setObject(7, credentials.updatedAt)
-            insertCred.execute()
+            ds.connection.use { conn ->
+                conn.prepareCall(UserQuery.INSERT_CREDENTIALS).use { stmt ->
+                    stmt.setInt(1, credentials.userId)
+                    stmt.setString(2, credentials.username)
+                    stmt.setString(3, credentials.password)
+                    stmt.setBoolean(4, credentials.activeSession)
+                    stmt.setBoolean(5, credentials.activeSessionDeleted)
+                    stmt.setObject(6, credentials.createdAt)
+                    stmt.setObject(7, credentials.updatedAt)
+                    stmt.execute()
+                }
+            }
+
+            val verificationLink = "http://localhost:8080/api/user/email/verify?userId=${user.id}"
+            val dotEnv           = dotenv()
+
+            val emailLogs = EmailSendingModel(
+                userId        = user.id,
+                fromSystem    = "REGISTRATION",
+                senderEmail   = dotEnv["GMAIL_EMAIL"],
+                receiverEmail = user.email,
+                status        = "PENDING",
+                subject       = "Welcome to our app, ${input.firstName}!",
+                body          = """
+                                    Hello ${input.firstName},
+                                    
+                                    Your registration was successful!
+                            
+                                    Please click the link below to verify your email:
+                                    $verificationLink
+                            
+                                    Regards,
+                                    The Team
+                                """.trimIndent(),
+                requestedAt   = now,
+                verifiedAt    = null,
+            ).sanitized()
+
+            val emailLogsError = emailLogs.validate()
+            if (emailLogsError.isNotEmpty()) {
+                return RegistrationResult.ValidationError("Email Logs validation failed.")
+            }
+
+            ds.connection.use { conn ->
+                conn.prepareCall(UserQuery.INSERT_EMAIL_SENDING).use { stmt ->
+                    stmt.setInt(1, emailLogs.userId)
+                    stmt.setString(2, emailLogs.fromSystem)
+                    stmt.setString(3, emailLogs.senderEmail)
+                    stmt.setString(4, emailLogs.receiverEmail)
+                    stmt.setString(5, emailLogs.status)
+                    stmt.setString(6, emailLogs.subject)
+                    stmt.setString(7, emailLogs.body)
+                    stmt.setObject(8, emailLogs.requestedAt)
+                    stmt.setObject(9, emailLogs.verifiedAt)
+                    stmt.execute()
+                }
+            }
+
+            val accessToken = methods.getAccessToken()
+            methods.sendEmail(
+                recipient   = information.email,
+                subject     = emailLogs.subject,
+                body        = emailLogs.body,
+                accessToken = accessToken
+            )
 
             RegistrationResult.Success("User registered successfully.")
         } catch (e: Exception) {
+            e.printStackTrace()
             RegistrationResult.Failure("Internal server error: ${e.message}")
         }
     }
 
-    private fun getUserIdByUsername(connection: Connection, username: String): Int? {
-        val userId = connection.prepareCall(UserQuery.GET_USER_ID)
-        userId.setString(1, username)
-        val result = userId.executeQuery()
-        return if (result.next()) result.getInt("id") else null
-    }
+    fun verifyEmail(call: ApplicationCall): RegistrationResult {
+        val userIdParam = call.request.queryParameters["userId"] ?: return RegistrationResult.ValidationError("test")
 
-    private fun hashPassword(password: String): String {
-        val hasher = Argon2Factory.create()
-
-        return hasher.hash(2, 65536, 1, password.toCharArray())
-    }
-
-    private fun saveImage(part: PartData.FileItem): String {
-        val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
-
-        val originalName      = part.originalFileName ?: ""
-        val extension         = File(originalName).extension.lowercase()
-
-        require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
-
-        val fileName = UUID.randomUUID().toString() + "." + extension
-        val filePath = "image_uploads/$fileName"
-
-        File(filePath).apply {
-            parentFile.mkdirs()
-            outputStream().use { part.streamProvider().copyTo(it) }
+        val userId = userIdParam.toIntOrNull()
+        if (userId == null) {
+            return RegistrationResult.Failure("test")
         }
 
-        return fileName
+        val dateNow = LocalDate.now()
+
+        return try {
+            ds.connection.use { conn ->
+                ds.connection.use { conn ->
+                    conn.prepareCall(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
+                        stmt.setInt(1, userId)
+                        stmt.setObject(2, dateNow)
+
+
+                        val rows = stmt.executeUpdate()
+                        if (rows > 0) {
+                            RegistrationResult.Success("Email verification successful!")
+                        } else {
+                            RegistrationResult.Failure("User email log not found.")
+                        }
+                    }
+                }
+            }
+            RegistrationResult.Success("Email Verification Success!")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            RegistrationResult.Failure("Internal server error: ${e.message}")
+        }
     }
 }
