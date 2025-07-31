@@ -1,5 +1,6 @@
 package com.marlow.plugin
 
+import com.marlow.global.ErrorLog
 import com.marlow.global.GlobalResponse
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.Application
@@ -35,8 +36,6 @@ fun Application.installGlobalErrorHandling(ds: HikariDataSource) {
 }
 
 private suspend fun logError(ds: HikariDataSource, call: ApplicationCall, cause: Throwable, status: HttpStatusCode, errorCode: Int, errorMessage: String) {
-    val ERROR_LOG_QUERY = "INSERT INTO error_logs (error_code, error_message, timestamp, api_occurred, system_occurred) VALUES (?, ?, ?, ?, ?)"
-
     // Log error to database
     val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
     val apiOccurred = call.request.path()
@@ -44,7 +43,7 @@ private suspend fun logError(ds: HikariDataSource, call: ApplicationCall, cause:
 
     // Call a function to log the error to the database
     ds.connection.use { conn ->
-        conn.prepareStatement(ERROR_LOG_QUERY).use { stmt ->
+        conn.prepareStatement(ErrorLog.ERROR_LOG_QUERY).use { stmt ->
             stmt.setInt(1, errorCode)
             stmt.setString(2, errorMessage)
             stmt.setTimestamp(3, timestamp)
