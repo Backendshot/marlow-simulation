@@ -1,11 +1,9 @@
 package com.marlow.unit
 
 // src/test/kotlin/unit/PasswordHasherTest.kt
-import io.mockk.every
-import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 //import org.junit.jupiter.api.Test
-import com.marlow.configuration.PasswordHasher
+import com.marlow.configs.PasswordHasher
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse

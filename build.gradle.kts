@@ -71,6 +71,7 @@ dependencies {
     testImplementation(libs.assertj.core)
     implementation(libs.dotenv.kotlin)
     implementation(libs.hikaricp)
+    implementation("de.mkammerer:argon2-jvm:2.11")
     //For Telemetry and Monitoring
 //    implementation(project(":core"))
     implementation(libs.ktor.server.metrics)
@@ -84,5 +85,5 @@ dependencies {
     api(libs.opentelemetry.ktor)
     api(libs.opentelemetry.exporter.logging)
     implementation(libs.ktor.server.status.pages)
-    implementation("com.sun.mail:jakarta.mail:2.0.1")
+    implementation(libs.jakarta.mail)
 }

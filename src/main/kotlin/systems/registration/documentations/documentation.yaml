@@ -1,0 +1,147 @@
+openapi: "3.0.3"
+info:
+  title: "Registration System API"
+  description: "API for user registration and email verification."
+  version: "1.0.0"
+servers:
+  - url: "http://127.1.1.0:8080"
+    description: "Internal staging server for testing"
+paths:
+  /api/user/register:
+    post:
+      summary: "Register a new user"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: "object"
+              properties:
+                username:
+                  type: "string"
+                firstName:
+                  type: "string"
+                middleName:
+                  type: "string"
+                  nullable: true
+                lastName:
+                  type: "string"
+                roleType:
+                  type: "string"
+                email:
+                  type: "string"
+                  format: "email"
+                birthday:
+                  type: "string"
+                  format: "date"
+                password:
+                  type: "string"
+                  format: "password"
+                image:
+                  type: "string"
+                  format: "binary"
+              required:
+                - "username"
+                - "firstName"
+                - "lastName"
+                - "roleType"
+                - "email"
+                - "birthday"
+                - "password"
+      responses:
+        "200":
+          description: "Successful registration"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "400":
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "409":
+          description: "Conflict - Username already exists"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conflict"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Failure"
+
+  /api/user/email/verify:
+    get:
+      summary: "Verify user email"
+      parameters:
+        - name: "userId"
+          in: "query"
+          description: "ID of the user to verify"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "Email verified successfully"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "400":
+          description: "Invalid userId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "500":
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Failure"
+
+components:
+  schemas:
+    Success:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          example: "success"
+        message:
+          type: "string"
+          example: "User registered successfully."
+
+    Failure:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          example: "failure"
+        message:
+          type: "string"
+          example: "Internal server error: Database issue."
+
+    Conflict:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          example: "conflict"
+        message:
+          type: "string"
+          example: "Username already exists."
+
+    ValidationError:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          example: "validation_error"
+        message:
+          type: "string"
+          example: "Password must be at least 8 characters."
