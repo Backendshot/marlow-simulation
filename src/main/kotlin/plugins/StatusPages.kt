@@ -24,18 +24,29 @@ fun Application.installGlobalErrorHandling(ds: HikariDataSource) {
             logError(ds, call, cause, HttpStatusCode.BadRequest, 400, "Wrong input: ${cause.localizedMessage}")
         }
         exception<NumberFormatException> { call, cause ->
-            logError(ds, call, cause, HttpStatusCode.BadRequest, 400, "Invalid number format: ${cause.localizedMessage}")
+            logError(
+                ds, call, cause, HttpStatusCode.BadRequest, 400, "Invalid number format: ${cause.localizedMessage}"
+            )
         }
         exception<BadRequestException> { call, cause ->
             logError(ds, call, cause, HttpStatusCode.BadRequest, 400, cause.message ?: "Bad request")
         }
         exception<Throwable> { call, cause ->
-            logError(ds, call, cause, HttpStatusCode.InternalServerError, 500, "Server error: ${cause.localizedMessage}")
+            logError(
+                ds, call, cause, HttpStatusCode.InternalServerError, 500, "Server error: ${cause.localizedMessage}"
+            )
         }
     }
 }
 
-private suspend fun logError(ds: HikariDataSource, call: ApplicationCall, cause: Throwable, status: HttpStatusCode, errorCode: Int, errorMessage: String) {
+private suspend fun logError(
+    ds: HikariDataSource,
+    call: ApplicationCall,
+    cause: Throwable,
+    status: HttpStatusCode,
+    errorCode: Int,
+    errorMessage: String
+) {
     // Log error to database
     val timestamp = java.sql.Timestamp(java.time.LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli())
     val apiOccurred = call.request.path()

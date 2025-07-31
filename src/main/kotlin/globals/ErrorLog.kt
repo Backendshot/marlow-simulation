@@ -13,8 +13,7 @@ import java.time.Instant
 data class ErrorLog(
     val errorCode: Int,
     val errorMessage: String,
-    @Serializable(with = TimestampIsoSerializer::class)
-    val timestamp: Timestamp,
+    @Serializable(with = TimestampIsoSerializer::class) val timestamp: Timestamp,
     val apiOcccurred: String,
     val systemOccurred: String
 ) {
@@ -26,8 +25,7 @@ data class ErrorLog(
 
 object TimestampIsoSerializer : KSerializer<Timestamp> {
     override val descriptor = PrimitiveSerialDescriptor(
-        "java.sql.Timestamp",
-        PrimitiveKind.STRING
+        "java.sql.Timestamp", PrimitiveKind.STRING
     )
 
     override fun serialize(encoder: Encoder, value: Timestamp) {

@@ -6,10 +6,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class Todo(
-    val userId: Int,
-    val id: Int,
-    val title: String,
-    val completed: Boolean
+    val userId: Int, val id: Int, val title: String, val completed: Boolean
 )
 
 class TodoValidator {
@@ -48,8 +45,7 @@ class TodoValidator {
      * @return error message if invalid, null otherwise
      */
     private fun JsonObject.ensureNumber(key: String): String? {
-        val element = this[key]?.jsonPrimitive
-            ?: return "$key is required and must be a JSON number"
+        val element = this[key]?.jsonPrimitive ?: return "$key is required and must be a JSON number"
         return if (element.isString) {
             "$key must be a JSON number"
         } else null
@@ -60,8 +56,7 @@ class TodoValidator {
      * @return error message if invalid, null otherwise
      */
     private fun JsonObject.ensureBoolean(key: String): String? {
-        val element = this[key]?.jsonPrimitive
-            ?: return "$key is required and must be a JSON boolean"
+        val element = this[key]?.jsonPrimitive ?: return "$key is required and must be a JSON boolean"
         return if (element.isString) {
             "$key must be a JSON boolean"
         } else null

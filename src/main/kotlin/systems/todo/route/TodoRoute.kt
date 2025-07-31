@@ -23,7 +23,9 @@ fun Route.todoRouting(ds: HikariDataSource) {
         }
         get("/{id?}") {
             val id: Int = call.requireIntParam("id")
-            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).fetchTodoById(id)))
+            call.respond(
+                HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).fetchTodoById(id))
+            )
         }
         get("/import-data-todos") {
             val count = TodoController(ds).importTodoData()
@@ -34,8 +36,13 @@ fun Route.todoRouting(ds: HikariDataSource) {
             val password = input.getValue("password").toCharArray()
             val argon2 = Argon2Factory.create()
             val hash = argon2.hash(1, 65536, 1, password)
-            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "The following are equivalent:",
-                mapOf("password" to input["password"], "password_array" to password.contentToString(), "hash" to hash)))
+            call.respond(
+                HttpStatusCode.OK, GlobalResponseData(
+                    200, true, "The following are equivalent:", mapOf(
+                        "password" to input["password"], "password_array" to password.contentToString(), "hash" to hash
+                    )
+                )
+            )
         }
     }
     route("/api/v2/") {
@@ -47,19 +54,16 @@ fun Route.todoRouting(ds: HikariDataSource) {
         get("read/{user_id?}") {
             try {
                 val userId =
-                    call.parameters["user_id"]?.toIntOrNull()
-                        ?: throw IllegalArgumentException("Invalid User ID")
+                    call.parameters["user_id"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
                 val todos = TodoController(ds).viewAllTodosById(userId)
                 call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todos))
             } catch (e: IllegalArgumentException) {
                 call.respond(
-                    HttpStatusCode.BadRequest,
-                    GlobalResponse(400, false, e.message ?: "Invalid request")
+                    HttpStatusCode.BadRequest, GlobalResponse(400, false, e.message ?: "Invalid request")
                 )
             } catch (e: Exception) {
                 call.respond(
-                    HttpStatusCode.InternalServerError,
-                    GlobalResponse(500, false, e.localizedMessage)
+                    HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage)
                 )
             }
         }
@@ -92,7 +96,10 @@ fun Route.todoRouting(ds: HikariDataSource) {
             }
 
             val todo = Json.decodeFromJsonElement<Todo>(element)
-            if (TodoController(ds).updateTodo(id, todo) == 0) throw Exception("Could not update Todo. Please try again.")
+            if (TodoController(ds).updateTodo(
+                    id, todo
+                ) == 0
+            ) throw Exception("Could not update Todo. Please try again.")
             call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Todo updated successfully."))
         }
 

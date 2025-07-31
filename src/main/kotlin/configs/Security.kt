@@ -46,6 +46,7 @@ fun Application.configureSecurity() {
         }
     }
 }
+
 @Serializable
 data class MySession(val count: Int = 0)
 
@@ -65,6 +66,7 @@ class PasswordHasher(
         // The returned string contains parameters, salt, and hash.
         return argon2.hash(iterations, memoryKb, parallelism, plain)
     }
+
     fun verify(encoded: String, plain: CharArray): Boolean {
         return argon2.verify(encoded, plain)
     }
