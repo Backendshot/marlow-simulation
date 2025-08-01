@@ -22,7 +22,7 @@ data class CredentialsModel(
     }
     fun sanitized(): CredentialsModel = this.copy(
         username = username.sanitizeInput(),
-        password = password.sanitizeInput(),
+        password = password,
         jwtToken = jwtToken?.sanitizeInput()
     )
     fun validate(): List<String> {
