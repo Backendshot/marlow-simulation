@@ -1,12 +1,12 @@
 package com.marlow
 
+import com.marlow.systems.login.query.LoginQuery
 import com.marlow.configs.Config
 import com.marlow.configs.configureHTTP
 import com.marlow.configs.configureMonitoring
 import com.marlow.configs.configureRouting
 import com.marlow.configs.configureSecurity
 import com.marlow.configs.configureSerialization
-import com.marlow.systems.login.query.LoginQuery
 import com.marlow.systems.login.util.LoginJWT
 import com.marlow.plugins.installGlobalErrorHandling
 import io.ktor.client.*

@@ -14,18 +14,12 @@ fun String.sanitizeInput(): String {
 
 fun String.sanitizeEmail(): String {
     val cleaned = this.trim().lowercase()
-
-    //Originally, the condition was if (!cleaned.contains("@") || !cleaned.contains(".")) to throw an IllegalArgumentException.
-    //However, SonarQube recommends using require() instead, which throws an IllegalArgumentException with a given string if the arguments evaluate to false.
-    //Shifting the code from an if condition to require() necessitated the inverse of (!cleaned.contains("@") || !cleaned.contains("."))
-    //So, by De Morgan's rule, the inverse of the above expression is (cleaned.contains("@") && cleaned.contains("."))
     require(cleaned.contains("@") && cleaned.contains(".")) { "Invalid email format." }
 
     val emailRegex = Regex("^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")
 
     require(emailRegex.matches(cleaned)) { "Invalid email format." }
-
-        return cleaned
+    return cleaned
 }
 
 fun String.sanitizeRole(): String {

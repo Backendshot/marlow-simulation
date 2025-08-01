@@ -13,12 +13,10 @@ data class InformationModel(
     val lastName: String? = null,
     val email: String,
     val emailVerified: Boolean = false,
-
     @Contextual val emailVerifiedAt: LocalDate? = null,
     @Contextual val birthday: LocalDate? = null,
     @Contextual val createdAt: LocalDate,
     @Contextual val updatedAt: LocalDate,
-
     val image: String? = null,
     val roleType: String
 ) {
@@ -28,7 +26,6 @@ data class InformationModel(
         require(email.isNotBlank()) { "Email must not be blank" }
         require(roleType.isNotBlank()) { "Role type must not be blank" }
     }
-
     fun sanitized(): InformationModel = this.copy(
         username   = username.trim().sanitizeInput(),
         firstName  = firstName.trim().sanitizeInput(),
@@ -38,10 +35,8 @@ data class InformationModel(
         image      = image?.trim()?.sanitizeInput(),
         roleType   = roleType.trim().sanitizeRole()
     )
-
     fun validate(): List<String> {
         val errors = mutableListOf<String>()
-
         if (username.isBlank()) errors.add("Username is required.")
         if (!username.matches(Regex("^[a-zA-Z0-9._-]{3,}$"))) {
             errors.add("Username must be at least 3 characters and contain only letters, numbers, dots, hyphens, or underscores.")
@@ -49,7 +44,6 @@ data class InformationModel(
         if (firstName.isBlank()) errors.add("First Name is required.")
         if (email.isBlank()) errors.add("Email is required.")
         if (roleType.isBlank()) errors.add("Role is required.")
-
         return errors
     }
 }
