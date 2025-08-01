@@ -1,6 +1,6 @@
 package com.marlow.configs
 
-import com.marlow.systems.login.route.LoginRouting
+import com.marlow.LoginSystem.route.LoginRouting
 import com.marlow.systems.todo.route.todoRouting
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*

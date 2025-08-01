@@ -1,28 +1,28 @@
-package com.marlow.systems.login.controller
+package com.marlow.LoginSystem.controller
 
-import com.marlow.systems.login.model.AuditModel
-import com.marlow.systems.login.model.LoginModel
-import com.marlow.systems.login.model.LoginRequest
-import com.marlow.systems.login.model.Validator
-import com.marlow.systems.login.query.LoginQuery
+import com.marlow.LoginSystem.model.AuditModel
+import com.marlow.LoginSystem.model.LoginModel
+import com.marlow.LoginSystem.model.LoginRequest
+import com.marlow.LoginSystem.model.Validator
+import com.marlow.LoginSystem.query.LoginQuery
 import com.marlow.systems.login.util.LoginJWT
 import com.marlow.systems.login.util.LoginSession
 import com.zaxxer.hikari.HikariDataSource
-import de.mkammerer.argon2.Argon2Factory
 import java.sql.Timestamp
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import de.mkammerer.argon2.Argon2Factory
 
 class LoginController(ds: HikariDataSource) {
     val connection = ds.connection
-    val argon2 = Argon2Factory.create()
+    val argon2     = Argon2Factory.create()
 
     suspend fun login(login: LoginRequest, browserInfo: String): LoginModel? =
             withContext(Dispatchers.IO) {
                 val validator = Validator()
-                val sanitizedLogin = validator.sanitizeInput(login)
+                val sanitizedLogin: LoginRequest = validator.sanitizeInput(login)
                 val errors = validator.validateLoginInput(sanitizedLogin)
 
                 if (errors.isNotEmpty()) {
@@ -31,26 +31,14 @@ class LoginController(ds: HikariDataSource) {
                     )
                 }
 
-                val (userId, storedHash) =
-                        connection.prepareStatement(LoginQuery.GET_USER_PASS_BY_USERNAME).use { stmt
-                            ->
+                val userId =
+                        connection.prepareStatement(LoginQuery.LOGIN_QUERY).use { stmt ->
                             stmt.setString(1, sanitizedLogin.username)
+                            stmt.setString(2, sanitizedLogin.password)
                             stmt.executeQuery().use { rs ->
-                                if (rs.next()) {
-                                    val id = rs.getInt("id")
-                                    val hash = rs.getString("password")
-                                    id to hash
-                                } else {
-                                    throw IllegalArgumentException("Invalid username or password.")
-                                }
+                                if (rs.next()) rs.getInt("user_id") else return@withContext null
                             }
                         }
-
-                val isPasswordValid =
-                        argon2.verify(storedHash, sanitizedLogin.password.toCharArray())
-                if (!isPasswordValid) {
-                    throw IllegalArgumentException("Invalid username or password.")
-                }
 
                 connection.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
                     stmt.setInt(1, userId)
@@ -62,6 +50,7 @@ class LoginController(ds: HikariDataSource) {
                                         "Email not verified. Please check your email to verify."
                                 )
                             }
+                            true
                         } else {
                             throw IllegalStateException(
                                     "No email verification record found for this user."
@@ -86,11 +75,16 @@ class LoginController(ds: HikariDataSource) {
                     stmt.setInt(1, userId)
                     stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
                     stmt.setString(3, browserInfo)
-                    stmt.execute()
+
+                    stmt.executeQuery().use { rs ->
+                        if (!rs.next()) {
+                            throw Exception("Audit insert failed; no result returned.")
+                        }
+                    }
                 }
 
                 return@withContext LoginModel(
-                        id = userId,
+                        user_id = userId,
                         username = sanitizedLogin.username,
                         password = sanitizedLogin.password,
                         jwt_token = jwtToken,
@@ -100,32 +94,32 @@ class LoginController(ds: HikariDataSource) {
             }
 
     suspend fun viewAllAuditById(user_id: Int): MutableList<AuditModel> =
-            withContext(Dispatchers.IO) {
-                val auditList = mutableListOf<AuditModel>()
-                val query = connection.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY)
-                query.setInt(1, user_id)
-                val result = query.executeQuery()
+        withContext(Dispatchers.IO) {
+            val auditList = mutableListOf<AuditModel>()
+            val query = connection.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY)
+            query.setInt(1, user_id)
+            val result = query.executeQuery()
 
-                val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm")
+            val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm")
 
-                while (result.next()) {
-                    val id = result.getInt("id")
-                    val userId = result.getInt("user_id")
-                    val timestampRaw = result.getTimestamp("timestamp")
-                    val timestamp = formatter.format(timestampRaw)
-                    val browser = result.getString("browser")
-                    auditList.add(AuditModel(id, userId, timestamp, browser))
-                }
-
-                return@withContext auditList
+            while (result.next()) {
+                val id = result.getInt("id")
+                val userId = result.getInt("user_id")
+                val timestampRaw = result.getTimestamp("timestamp")
+                val timestamp = formatter.format(timestampRaw)
+                val browser = result.getString("browser")
+                auditList.add(AuditModel(id, userId, timestamp, browser))
             }
 
-    suspend fun logout(id: Int): Boolean =
-            withContext(Dispatchers.IO) {
-                connection.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
-                    stmt.setInt(1, id)
-                    val rowsUpdated = stmt.executeUpdate()
-                    return@withContext rowsUpdated > 0
-                }
+            return@withContext auditList
+        }
+
+    suspend fun logout(user_id: Int): Boolean =
+        withContext(Dispatchers.IO) {
+            connection.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
+                stmt.setInt(1, user_id)
+                val rowsUpdated = stmt.executeUpdate()
+                return@withContext rowsUpdated > 0
             }
+        }
 }
