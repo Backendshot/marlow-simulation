@@ -1,9 +1,9 @@
-package com.marlow.LoginSystem.route
+package com.marlow.systems.login.route
 
-import com.marlow.LoginSystem.controller.LoginController
-import com.marlow.LoginSystem.model.LoginRequest
+import com.marlow.systems.login.controller.LoginController
+import com.marlow.systems.login.model.LoginRequest
 import com.marlow.systems.login.util.LoginAudit
-import com.marlow.LoginSystem.model.LogoutRequest
+import com.marlow.systems.login.model.LogoutRequest
 import com.marlow.globals.GlobalResponse
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.http.HttpStatusCode

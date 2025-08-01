@@ -1,4 +1,4 @@
-package com.marlow.LoginSystem.model
+package com.marlow.systems.login.model
 
 import kotlinx.serialization.Serializable
 

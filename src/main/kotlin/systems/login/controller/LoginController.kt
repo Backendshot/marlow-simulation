@@ -1,10 +1,10 @@
-package com.marlow.LoginSystem.controller
+package com.marlow.systems.login.controller
 
-import com.marlow.LoginSystem.model.AuditModel
-import com.marlow.LoginSystem.model.LoginModel
-import com.marlow.LoginSystem.model.LoginRequest
-import com.marlow.LoginSystem.model.Validator
-import com.marlow.LoginSystem.query.LoginQuery
+import com.marlow.systems.login.model.AuditModel
+import com.marlow.systems.login.model.LoginModel
+import com.marlow.systems.login.model.LoginRequest
+import com.marlow.systems.login.model.Validator
+import com.marlow.systems.login.query.LoginQuery
 import com.marlow.systems.login.util.LoginJWT
 import com.marlow.systems.login.util.LoginSession
 import com.zaxxer.hikari.HikariDataSource

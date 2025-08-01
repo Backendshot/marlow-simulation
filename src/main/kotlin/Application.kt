@@ -1,6 +1,6 @@
 package com.marlow
 
-import com.marlow.LoginSystem.query.LoginQuery
+import com.marlow.systems.login.query.LoginQuery
 import com.marlow.configs.Config
 import com.marlow.configs.configureHTTP
 import com.marlow.configs.configureMonitoring

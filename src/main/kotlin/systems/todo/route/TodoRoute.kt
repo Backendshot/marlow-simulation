@@ -4,7 +4,6 @@ import com.marlow.globals.GlobalResponse
 import com.marlow.globals.GlobalResponseData
 import com.marlow.systems.todo.controller.TodoController
 import com.marlow.systems.todo.model.Todo
-import com.marlow.systems.todo.model.TodoValidator
 import com.zaxxer.hikari.HikariDataSource
 import de.mkammerer.argon2.Argon2Factory
 import io.ktor.http.*

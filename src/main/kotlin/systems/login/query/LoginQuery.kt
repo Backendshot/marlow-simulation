@@ -1,4 +1,4 @@
-package com.marlow.LoginSystem.query
+package com.marlow.systems.login.query
 
 class LoginQuery {
     companion object {
