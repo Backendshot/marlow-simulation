@@ -13,6 +13,8 @@ data class Todo(
 
 class TodoValidator {
 
+    val minimumUserId = 1;
+
     fun sanitize(todo: Todo): Todo {
         return todo.copy(
             title = todo.title.trim()
@@ -22,7 +24,7 @@ class TodoValidator {
     fun validate(todo: Todo): List<String> {
         return buildList {
             if (todo.title.isBlank()) add("Title cannot be blank.")
-            if (todo.userId <= 0) add("User ID must be greater than 0.")
+            if (todo.userId < minimumUserId) add("User ID must be equal or greater than 1.")
         }
     }
 }

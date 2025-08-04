@@ -14,7 +14,10 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import java.time.LocalDate
 
-class RegistrationController (private val ds: HikariDataSource) {
+class RegistrationController(private val ds: HikariDataSource) {
+    val minimumPasswordLength = 8;
+    val userNotExist = 0;
+
     suspend fun register(call: ApplicationCall): RegistrationResult {
         return try {
             val methods    = GlobalMethods()
@@ -28,11 +31,13 @@ class RegistrationController (private val ds: HikariDataSource) {
                     is PartData.FormItem -> {
                         formFields[part.name.orEmpty()] = part.value
                     }
+
                     is PartData.FileItem -> {
                         if (part.name == "image" && !part.originalFileName.isNullOrBlank()) {
                             imageFileName = methods.saveImage(part)
                         }
                     }
+
                     else -> {}
                 }
                 part.dispose()
@@ -68,16 +73,20 @@ class RegistrationController (private val ds: HikariDataSource) {
                 return RegistrationResult.ValidationError("Information validation failed.")
             }
 
-            if (input.password.isBlank() || input.password.length < 8) {
+            if (input.password.isBlank() || input.password.length < minimumPasswordLength) {
                 return RegistrationResult.ValidationError("Password must be at least 8 characters.")
             }
 
-            val checkStmt = ds.connection.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS)
-            checkStmt.setString(1, information.username)
-            val result = checkStmt.executeQuery()
-            if (result.next() && result.getInt("count") > 0) {
-                return RegistrationResult.Conflict("Username already exists.")
+            ds.connection.use { conn ->
+                conn.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS).use { stmt ->
+                    stmt.setString(1, information.username)
+                    val result = stmt.executeQuery()
+                    if (result.next() && result.getInt("count") > userNotExist) {
+                        return RegistrationResult.Conflict("Username already exists.")
+                    }
+                }
             }
+
 
             ds.connection.use { conn ->
                 conn.prepareCall(UserQuery.INSERT_INFORMATION).use { stmt ->
@@ -196,18 +205,16 @@ class RegistrationController (private val ds: HikariDataSource) {
 
         return try {
             ds.connection.use { conn ->
-                ds.connection.use { conn ->
-                    conn.prepareCall(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
-                        stmt.setInt(1, userId)
-                        stmt.setObject(2, dateNow)
+                conn.prepareCall(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
+                    stmt.setInt(1, userId)
+                    stmt.setObject(2, dateNow)
 
 
-                        val rows = stmt.executeUpdate()
-                        if (rows > 0) {
-                            RegistrationResult.Success("Email verification successful!")
-                        } else {
-                            RegistrationResult.Failure("User email log not found.")
-                        }
+                    val rows = stmt.executeUpdate()
+                    if (rows > 0) {
+                        RegistrationResult.Success("Email verification successful!")
+                    } else {
+                        RegistrationResult.Failure("User email log not found.")
                     }
                 }
             }
