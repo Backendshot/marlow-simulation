@@ -7,9 +7,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Parameters
 import io.ktor.http.content.PartData
 import io.ktor.http.content.streamProvider
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.response.respond
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
@@ -116,5 +119,15 @@ class GlobalMethods {
         transport.connect("smtp.gmail.com", userEmail, accessToken)
         transport.sendMessage(message, message.allRecipients)
         transport.close()
+    }
+}
+
+object ErrorHandler {
+    suspend fun handle(call: ApplicationCall, e: Throwable) {
+        when (e) {
+            is IllegalArgumentException -> call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, e.localizedMessage ?: "Invalid request"))
+            is IllegalStateException -> call.respond(HttpStatusCode.Forbidden, GlobalResponse(403, false, e.localizedMessage ?: "Forbidden"))
+            else -> call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage ?: "Internal server error"))
+        }
     }
 }

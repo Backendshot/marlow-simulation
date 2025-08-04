@@ -1,6 +1,6 @@
 package com.marlow.configs
 
-import com.marlow.systems.login.route.LoginRouting
+import com.marlow.systems.login.route.LoginRoute
 import com.marlow.systems.todo.route.todoRouting
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
@@ -17,7 +17,7 @@ fun Application.configureRouting(ds: HikariDataSource) {
         authenticate("auth-bearer") {
             todoRouting(ds)
         }
-        LoginRouting(ds)
+        LoginRoute(ds)
         registrationRouting(ds)
         static("/image-uploads") {
             files("image-uploads")
