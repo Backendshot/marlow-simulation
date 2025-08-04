@@ -1,8 +1,8 @@
 openapi: "3.0.3"
 info:
-  title: "TODO API sample"
-  description: "A JSON API that allows you to view and add todo tasks"
-  version: "1.0.0"
+  title: "TODO API"
+  description: "A JSON API for login, logout, and audit trail functionality."
+  version: "1.0.1"
 servers:
   - url: "http://192.168.88.27:8080"
     description: "Internal staging server for testing"
@@ -10,85 +10,131 @@ paths:
   /user/login:
     post:
       tags:
-        - API
-      summary: "Login System"
-      description: "Login Username and Password"
+        - Authentication
+      summary: "Login with username and password"
+      description: "Authenticates the user and returns a JWT token with session info."
       requestBody:
-        description: "A JSON object containing login information"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LoginModel"
-      responses:
-        "201":
-          description: "Login Successful"
-          content:
-            text/plain:
-              schema:
-                type: "string"
-              examples:
-                Example#1:
-                  value: "Login correctly"
-  /user/logout:
-    get:
-      tags:
-        - API
-      summary: "Logout and Remove Session"
+              $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: "OK"
+          description: "Login successful"
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/LoginModel"
-  /audit/{userId}:
+        "400":
+          description: "Validation error"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Email not verified"
+
+  /user/logout:
+    post:
+      tags:
+        - Authentication
+      summary: "Logout and clear session"
+      description: "Logs the user out by deleting their session."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "200":
+          description: "Logout successful"
+        "404":
+          description: "User session not found"
+
+  /user/audit/{userId}:
     get:
       tags:
-        - API
-      summary: "Return all Audit Trail"
-      description: "Returns audit trail by its ID"
+        - Audit
+      summary: "Fetch audit trail for a user"
       parameters:
-        - name: "id"
-          in: "path"
+        - in: path
+          name: userId
           required: true
           schema:
-            type: "integer"
+            type: integer
+          description: "ID of the user"
       responses:
         "200":
-          description: "OK"
+          description: "Audit data fetched successfully"
           content:
-            '*/*':
+            application/json:
               schema:
-                $ref: "#/components/schemas/LoginModel"
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditModel"
+        "400":
+          description: "Invalid user ID"
 components:
   schemas:
     LoginModel:
-      type: "object"
+      type: object
+      properties:
+        user_id:
+          type: integer
+        username:
+          type: string
+        password:
+          type: string
+        jwt_token:
+          type: string
+          nullable: true
+        active_session:
+          type: string
+          nullable: true
+        active_session_deleted:
+          type: boolean
+          nullable: true
+
+    LoginRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          nullable: true
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    LogoutRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+      required:
+        - user_id
+
+    AuditModel:
+      type: object
       properties:
         id:
-          type: "integer"
-          description: "The unique identifier for the user"
-        username:
-          type: "string"
-          description: "The username of the user"
-        password:
-          type: "string"
-          description: "The password of the user"
-        jwt_token:
-          type: "string"
-          description: "JWT token"
-        active_session:
-          type: "string"
-          description: "Active session status"
-        active_session_deleted:
-          type: "boolean"
-          description: "Indicates if the active session has been logout"
+          type: integer
+        user_id:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        browser:
+          type: string
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT 
+      bearerFormat: JWT
 
-  security:
-    - bearerAuth: [ ]
+security:
+  - bearerAuth: []
