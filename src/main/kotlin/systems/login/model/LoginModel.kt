@@ -21,10 +21,16 @@ data class AuditModel(
 )
 
 @Serializable
-data class LoginRequest(val user_id: Int? = null, val username: String, val password: String)
+data class LoginRequest(
+    val user_id: Int? = null, 
+    val username: String, 
+    val password: String
+)
 
 @Serializable
-data class LogoutRequest(val user_id: Int)
+data class LogoutRequest(
+    val user_id: Int
+)
 
 class Validator {
     fun <T> validateLoginInput(data: T): List<String> {
