@@ -2,10 +2,11 @@ openapi: "3.0.3"
 info:
   title: "Registration System API"
   description: "API for user registration and email verification."
-  version: "1.0.0"
+  version: "1.0.1"
 servers:
-  - url: "http://127.1.1.0:8080"
-    description: "Internal staging server for testing"
+  - url: "http://127.0.0.1:8080"
+    description: "Local development server"
+
 paths:
   /api/user/register:
     post:
@@ -19,38 +20,46 @@ paths:
               properties:
                 username:
                   type: "string"
+                  example: "john.doe"
                 firstName:
                   type: "string"
+                  example: "John"
                 middleName:
                   type: "string"
                   nullable: true
+                  example: "Michael"
                 lastName:
                   type: "string"
+                  example: "Doe"
                 roleType:
                   type: "string"
+                  example: "CUSTOMER"
                 email:
                   type: "string"
                   format: "email"
+                  example: "john@example.com"
                 birthday:
                   type: "string"
                   format: "date"
+                  example: "2000-01-01"
                 password:
                   type: "string"
                   format: "password"
+                  example: "P@ssw0rd123"
                 image:
                   type: "string"
                   format: "binary"
               required:
-                - "username"
-                - "firstName"
-                - "lastName"
-                - "roleType"
-                - "email"
-                - "birthday"
-                - "password"
+                - username
+                - firstName
+                - lastName
+                - roleType
+                - email
+                - birthday
+                - password
       responses:
         "200":
-          description: "Successful registration"
+          description: "User registered successfully."
           content:
             application/json:
               schema:
@@ -85,24 +94,14 @@ paths:
           schema:
             type: "integer"
       responses:
-        "200":
-          description: "Email verified successfully"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Success"
+        "302":
+          description: "Redirects to frontend confirmation page depending on status (success, failed, invalid, error, not_found)"
         "400":
-          description: "Invalid userId"
+          description: "Invalid userId parameter"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationError"
-        "500":
-          description: "Internal server error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Failure"
 
 components:
   schemas:
@@ -144,4 +143,6 @@ components:
           example: "validation_error"
         message:
           type: "string"
-          example: "Password must be at least 8 characters."
+          example: |
+            Username must be at least 3 characters and contain only letters, numbers, dots, hyphens, or underscores.
+            Password must be at least 8 characters.
