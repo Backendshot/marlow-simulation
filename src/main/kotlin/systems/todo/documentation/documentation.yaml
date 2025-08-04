@@ -10,7 +10,7 @@ paths:
   /api/v2/create:
     post:
       tags:
-        - API
+        - Database API
       summary: "Create a Todo"
       description: "Creates a new todo"
       requestBody:
@@ -19,21 +19,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Todo"
+              $ref: "#/components/schemas/GlobalResponse"
       responses:
         "201":
           description: "Created"
           content:
-            text/plain:
+            '*/*':
               schema:
-                type: "string"
-              examples:
-                Example#1:
-                  value: "Customer stored correctly"
+                $ref: "#/components/schemas/GlobalResponseData"
+#            text/plain:
+#              schema:
+#                type: "string"
+#              examples:
+#                Example#1:
+#                  value: "Customer stored correctly"
   /api/v2/readall:
     get:
       tags:
-        - API
+        - Database API
       summary: "Return all Todos from database"
       responses:
         "200":
@@ -41,11 +44,11 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
-  /api/v2/read/{id}:
+                $ref: "#/components/schemas/GlobalResponseData"
+  /api/v2/read/{user_id}:
     get:
       tags:
-        - API
+        - Database API
       summary: "Return a Todo by id from database"
       description: "Returns a todo by its ID"
       parameters:
@@ -60,11 +63,11 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
+                $ref: "#/components/schemas/GlobalResponseData"
   /api/v2/update/{id}:
     patch:
       tags:
-        - API
+        - Database API
       summary: "Update a Todo by id"
       description: "Updates a todo by its ID"
       parameters:
@@ -79,11 +82,11 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
-  /api/v1/delete/{id}:
+                $ref: "#/components/schemas/GlobalResponse"
+  /api/v2/delete/{id}:
     delete:
       tags:
-        - API
+        - Database API
       summary: "Delete a Todo"
       description: "Deletes a todo by its ID"
       parameters:
@@ -98,7 +101,26 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
+                $ref: "#/components/schemas/GlobalResponse"
+  /api/v2/delete-table/{id?}:
+    patch:
+      tags:
+        - Database API
+      summary: "Soft-delete Todo"
+      description: "Mark a Todo for deletion"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GlobalResponse"
   /todos:
     get:
       tags:
@@ -113,7 +135,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
+                $ref: "#/components/schemas/GlobalResponseData"
   /todos/{id}:
     get:
       tags:
@@ -132,7 +154,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
+                $ref: "#/components/schemas/GlobalResponseData"
   /todos/import-data-todos:
     get:
       tags:
@@ -145,10 +167,32 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Todo"
+                $ref: "#/components/schemas/GlobalResponse"
 
 components:
   schemas:
+    GlobalResponse:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+        status:
+          type: "boolean"
+        message:
+          type: "string"
+    GlobalResponseData:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+        status:
+          type: "boolean"
+        message:
+          type: "string"
+        data:
+          type: "object"
     Todo:
       type: "object"
       properties:
@@ -161,6 +205,8 @@ components:
         title:
           type: "string"
         completed:
+          type: "boolean"
+        is_deleted:
           type: "boolean"
   securitySchemes:
     bearerAuth:
