@@ -71,7 +71,7 @@ class RegistrationController(private val ds: HikariDataSource) {
 
             val infoErrors = information.validate()
             if (infoErrors.isNotEmpty()) {
-                return RegistrationResult.ValidationError("Information validation failed.")
+                return RegistrationResult.ValidationError(infoErrors.joinToString(separator = "\n"))
             }
 
             if (input.password.isBlank() || input.password.length < minimumPasswordLength) {

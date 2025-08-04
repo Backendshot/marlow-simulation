@@ -41,7 +41,21 @@ data class InformationModel(
         if (!username.matches(Regex("^[a-zA-Z0-9._-]{3,}$"))) {
             errors.add("Username must be at least 3 characters and contain only letters, numbers, dots, hyphens, or underscores.")
         }
-        if (firstName.isBlank()) errors.add("First Name is required.")
+        if (firstName.isBlank()) {
+            errors.add("First Name is required.")
+        } else if (!firstName.matches(Regex("^[a-zA-Z\\s'-]+$"))) {
+            errors.add("First Name must only contain letters, spaces, hyphens, or apostrophes.")
+        }
+        middleName?.matches(Regex("^[a-zA-Z\\s'-]+$"))?.let {
+            if (!it) {
+                errors.add("Middle Name must only contain letters, spaces, hyphens, or apostrophes.")
+            }
+        }
+        lastName?.matches(Regex("^[a-zA-Z\\s'-]+$"))?.let {
+            if (!it) {
+                errors.add("Last Name must only contain letters, spaces, hyphens, or apostrophes.")
+            }
+        }
         if (email.isBlank()) errors.add("Email is required.")
         if (roleType.isBlank()) errors.add("Role is required.")
         return errors
