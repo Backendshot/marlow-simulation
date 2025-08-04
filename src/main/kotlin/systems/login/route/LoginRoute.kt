@@ -56,7 +56,13 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 // Insert audit
                 loginController.insertAudit(userId, browserInfo)
                 // Create Response
-                val response = loginController.loginResponse(userId, sanitizedLogin.username, sanitizedLogin.password, jwtToken, sessionId, sessionDeleted)
+                val response = loginController.loginResponse(
+                    userId,
+                    sanitizedLogin.username,
+                    sanitizedLogin.password,
+                    jwtToken,
+                    sessionId,
+                    sessionDeleted)
                 call.respond(HttpStatusCode.OK, response)
             } catch (e: Throwable) {
                 ErrorHandler.handle(call, e)

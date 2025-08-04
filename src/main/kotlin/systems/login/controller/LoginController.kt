@@ -1,8 +1,7 @@
 package com.marlow.systems.login.controller
 
-import com.marlow.systems.login.model.AuditModel
-import com.marlow.systems.login.model.LoginModel
-import com.marlow.systems.login.query.LoginQuery
+import com.marlow.systems.login.model.*
+import com.marlow.systems.login.query.*
 import com.zaxxer.hikari.HikariDataSource
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -49,14 +48,21 @@ class LoginController(private val ds: HikariDataSource) {
         }
     }
 
-    fun loginResponse(user_idParam: Int, usernameParam: String, passwordParam: String, jwt_tokenParam: String, active_sessionParam: String, active_session_deletedParam: Boolean,): LoginModel{
+    fun loginResponse(
+        userIdParam: Int,
+        usernameParam: String,
+        passwordParam: String,
+        jwtParam: String,
+        a_sessionParam: String,
+        a_session_deletedParam: Boolean,
+        ): LoginModel{
         return LoginModel(
-            user_id = user_idParam,
+            user_id = userIdParam,
             username = usernameParam,
             password = passwordParam,
-            jwt_token = jwt_tokenParam,
-            active_session = active_sessionParam,
-            active_session_deleted = active_session_deletedParam
+            jwt_token = jwtParam,
+            active_session = a_sessionParam,
+            active_session_deleted = a_session_deletedParam
         )
     }
 
