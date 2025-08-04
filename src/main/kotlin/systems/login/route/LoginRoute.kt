@@ -1,13 +1,11 @@
 package com.marlow.systems.login.route
 
 import com.marlow.globals.ErrorHandler
-import com.marlow.globals.GlobalMethods
 import com.marlow.systems.login.controller.LoginController
 import com.marlow.systems.login.model.LoginRequest
 import com.marlow.systems.login.util.LoginAudit
 import com.marlow.systems.login.model.LogoutRequest
 import com.marlow.globals.GlobalResponse
-import com.marlow.systems.login.model.LoginModel
 import com.marlow.systems.login.model.Validator
 import com.marlow.systems.login.util.LoginJWT
 import com.marlow.systems.login.util.LoginSession
