@@ -40,38 +40,8 @@ fun Route.registrationRouting(ds: HikariDataSource) {
                 }
             }
         }
-        get("email/verify") {
-            val result = RegistrationController(ds).verifyEmail(call)
-
-            when (result) {
-                is RegistrationResult.Success -> {
-                    call.respond(
-                        HttpStatusCode.Created,
-                        GlobalResponse(code = 201, status = true, message = result.message)
-                    )
-                }
-
-                is RegistrationResult.ValidationError -> {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        GlobalResponse(code = 400, status = false, message = result.message)
-                    )
-                }
-
-                is RegistrationResult.Conflict -> {
-                    call.respond(
-                        HttpStatusCode.Conflict,
-                        GlobalResponse(code = 409, status = false, message = result.message)
-                    )
-                }
-
-                is RegistrationResult.Failure -> {
-                    call.respond(
-                        HttpStatusCode.InternalServerError,
-                        GlobalResponse(code = 500, status = false, message = result.message)
-                    )
-                }
-            }
+        get("/email/verify") {
+            RegistrationController(ds).verifyEmail(call)
         }
     }
 }

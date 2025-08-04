@@ -12,6 +12,7 @@ import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
+import io.ktor.server.response.respondRedirect
 import java.time.LocalDate
 
 class RegistrationController (private val ds: HikariDataSource) {
@@ -184,37 +185,40 @@ class RegistrationController (private val ds: HikariDataSource) {
         }
     }
 
-    fun verifyEmail(call: ApplicationCall): RegistrationResult {
-        val userIdParam = call.request.queryParameters["userId"] ?: return RegistrationResult.ValidationError("test")
+    suspend fun verifyEmail(call: ApplicationCall) {
+        val userIdParam = call.request.queryParameters["userId"]
+        if (userIdParam == null) {
+            call.respondRedirect("http://127.0.0.1:5500/register.html?status=failed", permanent = false)
+            return
+        }
 
         val userId = userIdParam.toIntOrNull()
         if (userId == null) {
-            return RegistrationResult.Failure("test")
+            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=invalid", permanent = false)
+            return
         }
 
         val dateNow = LocalDate.now()
+        val status  = "VERIFIED"
 
-        return try {
+        try {
             ds.connection.use { conn ->
-                ds.connection.use { conn ->
-                    conn.prepareCall(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
-                        stmt.setInt(1, userId)
-                        stmt.setObject(2, dateNow)
+                conn.prepareStatement(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
+                    stmt.setString(1, status)
+                    stmt.setObject(2, dateNow)
+                    stmt.setInt(3, userId)
 
-
-                        val rows = stmt.executeUpdate()
-                        if (rows > 0) {
-                            RegistrationResult.Success("Email verification successful!")
-                        } else {
-                            RegistrationResult.Failure("User email log not found.")
-                        }
+                    val rows = stmt.executeUpdate()
+                    if (rows > 0) {
+                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=success", permanent = false)
+                    } else {
+                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=not_found", permanent = false)
                     }
                 }
             }
-            RegistrationResult.Success("Email Verification Success!")
         } catch (e: Exception) {
             e.printStackTrace()
-            RegistrationResult.Failure("Internal server error: ${e.message}")
+            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=error", permanent = false)
         }
     }
 }
