@@ -33,8 +33,10 @@ class GlobalMethods {
         return if (result.next()) {
             val id    = result.getInt("id")
             val email = result.getString("email")
+            connection.close()
             GlobalUserInfo(id, email)
         } else {
+            connection.close()
             null
         }
     }

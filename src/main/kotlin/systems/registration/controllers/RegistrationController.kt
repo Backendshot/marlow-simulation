@@ -12,9 +12,13 @@ import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
+import io.ktor.server.response.respondRedirect
 import java.time.LocalDate
 
-class RegistrationController (private val ds: HikariDataSource) {
+class RegistrationController(private val ds: HikariDataSource) {
+    val minimumPasswordLength = 8;
+    val userNotExist = 0;
+
     suspend fun register(call: ApplicationCall): RegistrationResult {
         return try {
             val methods    = GlobalMethods()
@@ -28,11 +32,13 @@ class RegistrationController (private val ds: HikariDataSource) {
                     is PartData.FormItem -> {
                         formFields[part.name.orEmpty()] = part.value
                     }
+
                     is PartData.FileItem -> {
                         if (part.name == "image" && !part.originalFileName.isNullOrBlank()) {
                             imageFileName = methods.saveImage(part)
                         }
                     }
+
                     else -> {}
                 }
                 part.dispose()
@@ -65,18 +71,21 @@ class RegistrationController (private val ds: HikariDataSource) {
 
             val infoErrors = information.validate()
             if (infoErrors.isNotEmpty()) {
-                return RegistrationResult.ValidationError("Information validation failed.")
+                return RegistrationResult.ValidationError(infoErrors.joinToString(separator = "\n"))
             }
 
-            if (input.password.isBlank() || input.password.length < 8) {
+            if (input.password.isBlank() || input.password.length < minimumPasswordLength) {
                 return RegistrationResult.ValidationError("Password must be at least 8 characters.")
             }
 
-            val checkStmt = ds.connection.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS)
-            checkStmt.setString(1, information.username)
-            val result = checkStmt.executeQuery()
-            if (result.next() && result.getInt("count") > 0) {
-                return RegistrationResult.Conflict("Username already exists.")
+            ds.connection.use { conn ->
+                conn.prepareStatement(UserQuery.CHECK_USERNAME_EXISTS).use { stmt ->
+                    stmt.setString(1, information.username)
+                    val result = stmt.executeQuery()
+                    if (result.next() && result.getInt("count") > userNotExist) {
+                        return RegistrationResult.Conflict("Username already exists.")
+                    }
+                }
             }
 
             ds.connection.use { conn ->
@@ -184,37 +193,40 @@ class RegistrationController (private val ds: HikariDataSource) {
         }
     }
 
-    fun verifyEmail(call: ApplicationCall): RegistrationResult {
-        val userIdParam = call.request.queryParameters["userId"] ?: return RegistrationResult.ValidationError("test")
+    suspend fun verifyEmail(call: ApplicationCall) {
+        val userIdParam = call.request.queryParameters["userId"]
+        if (userIdParam == null) {
+            call.respondRedirect("http://127.0.0.1:5500/register.html?status=failed", permanent = false)
+            return
+        }
 
         val userId = userIdParam.toIntOrNull()
         if (userId == null) {
-            return RegistrationResult.Failure("test")
+            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=invalid", permanent = false)
+            return
         }
 
         val dateNow = LocalDate.now()
+        val status  = "VERIFIED"
 
-        return try {
+        try {
             ds.connection.use { conn ->
-                ds.connection.use { conn ->
-                    conn.prepareCall(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
-                        stmt.setInt(1, userId)
-                        stmt.setObject(2, dateNow)
+                conn.prepareStatement(UserQuery.UPDATE_EMAIL_VERIFIED).use { stmt ->
+                    stmt.setString(1, status)
+                    stmt.setObject(2, dateNow)
+                    stmt.setInt(3, userId)
 
-
-                        val rows = stmt.executeUpdate()
-                        if (rows > 0) {
-                            RegistrationResult.Success("Email verification successful!")
-                        } else {
-                            RegistrationResult.Failure("User email log not found.")
-                        }
+                    val rows = stmt.executeUpdate()
+                    if (rows > 0) {
+                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=success", permanent = false)
+                    } else {
+                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=not_found", permanent = false)
                     }
                 }
             }
-            RegistrationResult.Success("Email Verification Success!")
         } catch (e: Exception) {
             e.printStackTrace()
-            RegistrationResult.Failure("Internal server error: ${e.message}")
+            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=error", permanent = false)
         }
     }
 }
