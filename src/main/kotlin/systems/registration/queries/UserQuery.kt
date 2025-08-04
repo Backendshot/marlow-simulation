@@ -7,6 +7,6 @@ class UserQuery {
         const val CHECK_USERNAME_EXISTS = "SELECT COUNT(*) AS count FROM tbl_information WHERE username = ?"
         const val GET_USER              = "SELECT id, email FROM tbl_information WHERE username = ?"
         const val INSERT_EMAIL_SENDING  = "CALL insert_email_sending(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        const val UPDATE_EMAIL_VERIFIED = "CALL update_email_verified(?, ?)"
+        const val UPDATE_EMAIL_VERIFIED = "UPDATE tbl_email_sending SET status = ?, verified_at = ? WHERE user_id = ?"
     }
 }
