@@ -24,7 +24,7 @@ paths:
         "201":
           description: "Created"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponseData"
 #            text/plain:
@@ -42,7 +42,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponseData"
   /api/v2/read/{user_id}:
@@ -61,7 +61,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponseData"
   /api/v2/update/{id}:
@@ -80,7 +80,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponse"
   /api/v2/delete/{id}:
@@ -99,7 +99,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponse"
   /api/v2/delete-table/{id?}:
@@ -118,7 +118,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponse"
   /todos:
@@ -133,7 +133,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponseData"
   /todos/{id}:
@@ -152,7 +152,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponseData"
   /todos/import-data-todos:
@@ -165,7 +165,7 @@ paths:
         "200":
           description: "OK"
           content:
-            '*/*':
+            'application/json':
               schema:
                 $ref: "#/components/schemas/GlobalResponse"
 
