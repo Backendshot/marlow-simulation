@@ -11,12 +11,12 @@ class LoginController(private val ds: HikariDataSource) {
     fun getUserIdAndHash(usernameParam: String): Pair<Int, String>? {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.GET_USER_PASS_BY_USERNAME).use { stmt ->
-                stmt.setString(1, usernameParam)
-                stmt.executeQuery().use { rs ->
-                    return if (rs.next()) {
-                        rs.getInt("user_id") to rs.getString("password")
-                    } else null
-                }
+                stmt.apply {setString(1, usernameParam)}
+                    .executeQuery().use { rs ->
+                        return if (rs.next()) {
+                            rs.getInt("user_id") to rs.getString("password")
+                        } else null
+                    }
             }
         }
     }
@@ -24,13 +24,13 @@ class LoginController(private val ds: HikariDataSource) {
     fun checkEmailStatus(userIdParam: Int): Boolean {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
-                stmt.setInt(1, userIdParam)
-                stmt.executeQuery().use { rs ->
-                    if (rs.next()) {
-                        val status = rs.getString("status")
-                        return !status.equals("PENDING", ignoreCase = true)
+                stmt.apply {setInt(1, userIdParam)}
+                    .executeQuery().use { rs ->
+                        if (rs.next()) {
+                            val status = rs.getString("status")
+                            return !status.equals("PENDING", ignoreCase = true)
+                        }
                     }
-                }
             }
         }
         return false
@@ -39,11 +39,13 @@ class LoginController(private val ds: HikariDataSource) {
     fun updateSession(userIdParam: Int, sessionIdParam: String, jwtTokenParam: String, sessionDeletedParam: Boolean) {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { stmt ->
-                stmt.setString(1, sessionIdParam)
-                stmt.setString(2, jwtTokenParam)
-                stmt.setBoolean(3, sessionDeletedParam)
-                stmt.setInt(4, userIdParam)
-                stmt.executeUpdate()
+                stmt.apply {
+                    setString(1, sessionIdParam)
+                    setString(2, jwtTokenParam)
+                    setBoolean(3, sessionDeletedParam)
+                    setInt(4, userIdParam)
+                    executeUpdate()
+                }
             }
         }
     }
@@ -52,27 +54,27 @@ class LoginController(private val ds: HikariDataSource) {
         userIdParam: Int,
         usernameParam: String,
         passwordParam: String,
-        jwtParam: String,
-        a_sessionParam: String,
-        a_session_deletedParam: Boolean,
-        ): LoginModel{
-        return LoginModel(
-            user_id = userIdParam,
-            username = usernameParam,
-            password = passwordParam,
-            jwt_token = jwtParam,
-            active_session = a_sessionParam,
-            active_session_deleted = a_session_deletedParam
-        )
-    }
+        jwtTokenParam: String,
+        activeSessionParam: String,
+        activeSessionDeletedParam: Boolean
+    ): LoginModel = LoginModel(
+        user_id = userIdParam,
+        username = usernameParam,
+        password = passwordParam,
+        jwt_token = jwtTokenParam,
+        active_session = activeSessionParam,
+        active_session_deleted = activeSessionDeletedParam
+    )
 
     fun insertAudit(userId: Int, browserInfo: String) {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { stmt ->
-                stmt.setInt(1, userId)
-                stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
-                stmt.setString(3, browserInfo)
-                stmt.execute()
+                stmt.apply {
+                    setInt(1, userId)
+                    setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
+                    setString(3, browserInfo)
+                    execute()
+                }
             }
         }
     }
@@ -80,8 +82,8 @@ class LoginController(private val ds: HikariDataSource) {
     fun viewAllAuditById(userIdParam: Int): List<AuditModel> {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY).use { stmt ->
-                stmt.setInt(1, userIdParam)
-                stmt.executeQuery().use { data ->
+                stmt.apply {setInt(1, userIdParam)}
+                    .executeQuery().use { data ->
                     val auditList = mutableListOf<AuditModel>()
                     while (data.next()) {
                         val id = data.getInt("id")

@@ -38,7 +38,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
 
                 val (userId, storedHash) = userIdAndHash
 
-                // Check password
+                // Verify password
                 val argon2 = de.mkammerer.argon2.Argon2Factory.create()
                 if (!argon2.verify(storedHash, sanitizedLogin.password.toCharArray())) {
                     return@post call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password."))
