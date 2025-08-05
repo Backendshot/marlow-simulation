@@ -33,19 +33,6 @@ fun Route.todoRouting(ds: HikariDataSource) {
             val count = TodoController(ds).importTodoData()
             call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Imported $count rows"))
         }
-        post("/hash") {
-            val input = call.receive<Map<String, String>>()
-            val password = input.getValue("password").toCharArray()
-            val argon2 = Argon2Factory.create()
-            val hash = argon2.hash(1, 65536, 1, password)
-            call.respond(
-                HttpStatusCode.OK, GlobalResponseData(
-                    200, true, "The following are equivalent:", mapOf(
-                        "password" to input["password"], "password_array" to password.contentToString(), "hash" to hash
-                    )
-                )
-            )
-        }
     }
     route("/api/v2/") {
         get("readall") {

@@ -13,8 +13,9 @@ import registrationRouting
 
 fun Application.configureRouting(ds: HikariDataSource) {
     routing {
-        swaggerUI("/swagger", "src/main/kotlin/systems/todo/documentation/documentation.yaml")
         swaggerUI("/swagger/login", "src/main/kotlin/systems/login/documentation/documentation.yaml")
+        swaggerUI("/swagger/registration", "src/main/kotlin/systems/registration/documentation/documentation.yaml")
+        swaggerUI("/swagger/todo", "src/main/kotlin/systems/todo/documentation/documentation.yaml")
         authenticate("auth-bearer") {
             todoRouting(ds)
         }
