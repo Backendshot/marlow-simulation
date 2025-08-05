@@ -88,6 +88,7 @@ class RegistrationController(private val ds: HikariDataSource) {
                 }
             }
 
+
             ds.connection.use { conn ->
                 conn.prepareCall(UserQuery.INSERT_INFORMATION).use { stmt ->
                     stmt.setString(1, information.username)
