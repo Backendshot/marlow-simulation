@@ -1,147 +1,154 @@
 openapi: "3.0.3"
 info:
-  title: "Registration System API"
-  description: "API for user registration and email verification."
+  title: "User Registration API"
   version: "1.0.0"
+  description: "API for user registration and email verification."
+
 servers:
-  - url: "http://127.1.1.0:8080"
-    description: "Internal staging server for testing"
+  - url: "http://localhost:8080"
+    description: "Local server"
+
 paths:
   /api/user/register:
     post:
       summary: "Register a new user"
+      description: |
+        Accepts a multipart/form-data request with user details and an optional profile image.
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              type: "object"
+              type: object
+              required:
+                - username
+                - firstName
+                - lastName
+                - email
+                - roleType
+                - birthday
+                - password
               properties:
                 username:
-                  type: "string"
+                  type: string
                 firstName:
-                  type: "string"
+                  type: string
                 middleName:
-                  type: "string"
-                  nullable: true
+                  type: string
                 lastName:
-                  type: "string"
-                roleType:
-                  type: "string"
+                  type: string
                 email:
-                  type: "string"
-                  format: "email"
+                  type: string
+                  format: email
+                roleType:
+                  type: string
+                  example: "USER"
                 birthday:
-                  type: "string"
-                  format: "date"
+                  type: string
+                  format: date
                 password:
-                  type: "string"
-                  format: "password"
+                  type: string
+                  format: password
+                  minLength: 8
                 image:
-                  type: "string"
-                  format: "binary"
-              required:
-                - "username"
-                - "firstName"
-                - "lastName"
-                - "roleType"
-                - "email"
-                - "birthday"
-                - "password"
+                  type: string
+                  format: binary
       responses:
-        "200":
-          description: "Successful registration"
+        "201":
+          description: "User registered successfully"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Success"
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 201
+                  status:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User registered successfully."
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 123
         "400":
-          description: "Validation error"
+          description: "Validation failed"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ValidationError"
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 400
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Password must be at least 8 characters."
         "409":
-          description: "Conflict - Username already exists"
+          description: "Username already exists"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Conflict"
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 409
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Username already exists."
         "500":
-          description: "Internal server error"
+          description: "Server error"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Failure"
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal server error."
 
   /api/user/email/verify:
     get:
-      summary: "Verify user email"
+      summary: "Verify user's email address"
+      description: |
+        Verifies the user's email using the provided `userId` in the query param.
+        Redirects to a frontend confirmation page based on result.
       parameters:
-        - name: "userId"
-          in: "query"
-          description: "ID of the user to verify"
+        - name: userId
+          in: query
           required: true
           schema:
-            type: "integer"
+            type: integer
+          description: The user's ID to verify
       responses:
-        "200":
-          description: "Email verified successfully"
-          content:
-            application/json:
+        "302":
+          description: "Redirect to frontend page"
+          headers:
+            Location:
               schema:
-                $ref: "#/components/schemas/Success"
+                type: string
+              description: Redirect location (e.g., `/welcome.html?status=success`)
         "400":
-          description: "Invalid userId"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ValidationError"
+          description: "Missing or invalid user ID"
+        "404":
+          description: "User not found"
         "500":
-          description: "Internal server error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Failure"
-
-components:
-  schemas:
-    Success:
-      type: "object"
-      properties:
-        status:
-          type: "string"
-          example: "success"
-        message:
-          type: "string"
-          example: "User registered successfully."
-
-    Failure:
-      type: "object"
-      properties:
-        status:
-          type: "string"
-          example: "failure"
-        message:
-          type: "string"
-          example: "Internal server error: Database issue."
-
-    Conflict:
-      type: "object"
-      properties:
-        status:
-          type: "string"
-          example: "conflict"
-        message:
-          type: "string"
-          example: "Username already exists."
-
-    ValidationError:
-      type: "object"
-      properties:
-        status:
-          type: "string"
-          example: "validation_error"
-        message:
-          type: "string"
-          example: "Password must be at least 8 characters."
+          description: "Internal error"
