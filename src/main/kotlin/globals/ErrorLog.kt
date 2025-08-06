@@ -14,7 +14,7 @@ data class ErrorLog(
     val errorCode: Int,
     val errorMessage: String,
     @Serializable(with = TimestampIsoSerializer::class) val timestamp: Timestamp,
-    val apiOcccurred: String,
+    val apiOccurred: String,
     val systemOccurred: String
 ) {
     companion object {

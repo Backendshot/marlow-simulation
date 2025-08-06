@@ -60,14 +60,13 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 call.respond(HttpStatusCode.OK, response)
             } catch (e: Throwable) {
                 ErrorHandler.handle(call, e)
-
             }
         }
 
         post("/logout") {
             try {
                 val logoutData = call.receive<LogoutRequest>()
-                val result = loginController.logout(logoutData.user_id)
+                val result = loginController.logout(logoutData.userId)
                 if (!result) {
                     return@post call.respond(HttpStatusCode.NotFound, GlobalResponse(404, false, "User session not found"))
                 }

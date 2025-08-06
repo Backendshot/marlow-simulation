@@ -22,7 +22,6 @@ import kotlin.collections.joinToString
 import kotlin.collections.map
 import kotlin.collections.mutableListOf
 import kotlin.text.isEmpty
-import kotlin.use
 
 class TodoController(
     private val ds: HikariDataSource, private val dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -48,7 +47,7 @@ class TodoController(
                 stmt.setInt(1, sanitizedTodo.userId)
                 stmt.setString(2, sanitizedTodo.title)
                 stmt.setBoolean(3, sanitizedTodo.completed)
-                stmt.setBoolean(4, sanitizedTodo.is_deleted)
+                stmt.setBoolean(4, sanitizedTodo.isDeleted)
 
                 val rowsInserted = stmt.executeUpdate()
 

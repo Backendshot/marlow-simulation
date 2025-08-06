@@ -37,21 +37,22 @@ data class InformationModel(
     )
     fun validate(): List<String> {
         val errors = mutableListOf<String>()
+        val nameRegexPattern = "^[a-zA-Z\\s'-]+$"
         if (username.isBlank()) errors.add("Username is required.")
         if (!username.matches(Regex("^[a-zA-Z0-9._-]{3,}$"))) {
             errors.add("Username must be at least 3 characters and contain only letters, numbers, dots, hyphens, or underscores.")
         }
         if (firstName.isBlank()) {
             errors.add("First Name is required.")
-        } else if (!firstName.matches(Regex("^[a-zA-Z\\s'-]+$"))) {
+        } else if (!firstName.matches(Regex(nameRegexPattern))) {
             errors.add("First Name must only contain letters, spaces, hyphens, or apostrophes.")
         }
-        middleName?.matches(Regex("^[a-zA-Z\\s'-]+$"))?.let {
+        middleName?.matches(Regex(nameRegexPattern))?.let {
             if (!it) {
                 errors.add("Middle Name must only contain letters, spaces, hyphens, or apostrophes.")
             }
         }
-        lastName?.matches(Regex("^[a-zA-Z\\s'-]+$"))?.let {
+        lastName?.matches(Regex(nameRegexPattern))?.let {
             if (!it) {
                 errors.add("Last Name must only contain letters, spaces, hyphens, or apostrophes.")
             }

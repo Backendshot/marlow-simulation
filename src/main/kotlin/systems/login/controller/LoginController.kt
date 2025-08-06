@@ -49,14 +49,14 @@ class LoginController(private val ds: HikariDataSource) {
         }
     }
 
-    fun loginResponse(user_idParam: Int, usernameParam: String, passwordParam: String, jwt_tokenParam: String, active_sessionParam: String, active_session_deletedParam: Boolean,): LoginModel{
+    fun loginResponse(userIdParam: Int, usernameParam: String, passwordParam: String, jwtTokenParam: String, activeSessionParam: String, activeSessionDeletedParam: Boolean,): LoginModel{
         return LoginModel(
-            user_id = user_idParam,
+            user_id = userIdParam,
             username = usernameParam,
             password = passwordParam,
-            jwt_token = jwt_tokenParam,
-            active_session = active_sessionParam,
-            active_session_deleted = active_session_deletedParam
+            jwt_token = jwtTokenParam,
+            active_session = activeSessionParam,
+            active_session_deleted = activeSessionDeletedParam
         )
     }
 

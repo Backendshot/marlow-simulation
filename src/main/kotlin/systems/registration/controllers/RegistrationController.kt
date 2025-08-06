@@ -38,8 +38,9 @@ class RegistrationController(private val ds: HikariDataSource) {
                             imageFileName = methods.saveImage(part)
                         }
                     }
-
-                    else -> {}
+                    else -> {
+                        //do nothing
+                    }
                 }
                 part.dispose()
             }
