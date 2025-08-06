@@ -13,16 +13,21 @@ import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.respondRedirect
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
-class RegistrationController(private val ds: HikariDataSource) {
+class RegistrationController(
+    private val ds: HikariDataSource, private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     val minimumPasswordLength = 8;
     val userNotExist = 0;
 
-    suspend fun register(call: ApplicationCall): RegistrationResult {
-        return try {
+    suspend fun register(callParam: ApplicationCall): RegistrationResult = withContext(dispatcher) {
+        return@withContext try {
             val methods    = GlobalMethods()
-            val multipart  = call.receiveMultipart()
+            val multipart  = callParam.receiveMultipart()
             val formFields = mutableMapOf<String, String>()
             val now        = LocalDate.now()
 
@@ -38,6 +43,7 @@ class RegistrationController(private val ds: HikariDataSource) {
                             imageFileName = methods.saveImage(part)
                         }
                     }
+
                     else -> {
                         //do nothing
                     }
@@ -72,11 +78,11 @@ class RegistrationController(private val ds: HikariDataSource) {
 
             val infoErrors = information.validate()
             if (infoErrors.isNotEmpty()) {
-                return RegistrationResult.ValidationError(infoErrors.joinToString(separator = "\n"))
+                return@withContext RegistrationResult.ValidationError(infoErrors.joinToString(separator = "\n"))
             }
 
             if (input.password.isBlank() || input.password.length < minimumPasswordLength) {
-                return RegistrationResult.ValidationError("Password must be at least 8 characters.")
+                return@withContext RegistrationResult.ValidationError("Password must be at least 8 characters.")
             }
 
             ds.connection.use { conn ->
@@ -84,7 +90,7 @@ class RegistrationController(private val ds: HikariDataSource) {
                     stmt.setString(1, information.username)
                     val result = stmt.executeQuery()
                     if (result.next() && result.getInt("count") > userNotExist) {
-                        return RegistrationResult.Conflict("Username already exists.")
+                        return@use RegistrationResult.Conflict("Username already exists.")
                     }
                 }
             }
@@ -107,7 +113,7 @@ class RegistrationController(private val ds: HikariDataSource) {
             }
 
             val user = methods.getUserByUsername(ds.connection, information.username)
-                ?: return RegistrationResult.Failure("Failed to retrieve new user ID.")
+                ?: return@withContext RegistrationResult.Failure("Failed to retrieve new user ID.")
 
             val credentials = CredentialsModel(
                 userId    = user.id,
@@ -119,7 +125,7 @@ class RegistrationController(private val ds: HikariDataSource) {
 
             val credErrors = credentials.validate()
             if (credErrors.isNotEmpty()) {
-                return RegistrationResult.ValidationError("Credentials validation failed.")
+                return@withContext RegistrationResult.ValidationError("Credentials validation failed.")
             }
 
             ds.connection.use { conn ->
@@ -136,7 +142,7 @@ class RegistrationController(private val ds: HikariDataSource) {
             }
 
             val verificationLink = "http://localhost:8080/api/user/email/verify?userId=${user.id}"
-            val dotEnv           = dotenv()
+            val dotEnv = dotenv()
 
             val emailLogs = EmailSendingModel(
                 userId        = user.id,
@@ -145,7 +151,7 @@ class RegistrationController(private val ds: HikariDataSource) {
                 receiverEmail = user.email,
                 status        = "PENDING",
                 subject       = "Welcome to our app, ${input.firstName}!",
-                body          = """
+                body = """
                                     Hello ${input.firstName},
                                     
                                     Your registration was successful!
@@ -162,7 +168,7 @@ class RegistrationController(private val ds: HikariDataSource) {
 
             val emailLogsError = emailLogs.validate()
             if (emailLogsError.isNotEmpty()) {
-                return RegistrationResult.ValidationError("Email Logs validation failed.")
+                return@withContext RegistrationResult.ValidationError("Email Logs validation failed.")
             }
 
             ds.connection.use { conn ->
@@ -195,21 +201,21 @@ class RegistrationController(private val ds: HikariDataSource) {
         }
     }
 
-    suspend fun verifyEmail(call: ApplicationCall) {
-        val userIdParam = call.request.queryParameters["userId"]
+    suspend fun verifyEmail(callParam: ApplicationCall) = withContext(dispatcher) {
+        val userIdParam = callParam.request.queryParameters["userId"]
         if (userIdParam == null) {
-            call.respondRedirect("http://127.0.0.1:5500/register.html?status=failed", permanent = false)
-            return
+            callParam.respondRedirect("http://127.0.0.1:5500/register.html?status=failed", permanent = false)
+            return@withContext
         }
 
         val userId = userIdParam.toIntOrNull()
         if (userId == null) {
-            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=invalid", permanent = false)
-            return
+            callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=invalid", permanent = false)
+            return@withContext
         }
 
         val dateNow = LocalDate.now()
-        val status  = "VERIFIED"
+        val status = "VERIFIED"
 
         try {
             ds.connection.use { conn ->
@@ -220,15 +226,15 @@ class RegistrationController(private val ds: HikariDataSource) {
 
                     val rows = stmt.executeUpdate()
                     if (rows > 0) {
-                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=success", permanent = false)
+                        callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=success", permanent = false)
                     } else {
-                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=not_found", permanent = false)
+                        callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=not_found", permanent = false)
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=error", permanent = false)
+            callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=error", permanent = false)
         }
     }
 }

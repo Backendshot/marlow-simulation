@@ -29,10 +29,10 @@ class TodoController(
     val apiUrl = "https://jsonplaceholder.typicode.com/todos"
     val todoRetrieveFail = "Failed to retrieve todos"
 
-    suspend fun createTodo(todo: Todo): Pair<Int, Int> = withContext(dispatcher) {
+    suspend fun createTodo(todoParam: Todo): Pair<Int, Int> = withContext(dispatcher) {
         // Validate
         val validator = TodoValidator()
-        val sanitizedTodo = validator.sanitize(todo)
+        val sanitizedTodo = validator.sanitize(todoParam)
         val validationErrors = validator.validate(sanitizedTodo)
 
         if (validationErrors.isEmpty()) {
@@ -98,9 +98,9 @@ class TodoController(
         return@withContext todos
     }
 
-    suspend fun updateTodo(id: Int, todo: Todo): Int = withContext(dispatcher) {
+    suspend fun updateTodo(idParam: Int, todoParam: Todo): Int = withContext(dispatcher) {
         val validator = TodoValidator()
-        val sanitizedTodo = validator.sanitize(todo)
+        val sanitizedTodo = validator.sanitize(todoParam)
         val validationErrors = validator.validate(sanitizedTodo)
 
         if (validationErrors.isNotEmpty()) {
@@ -111,26 +111,26 @@ class TodoController(
             conn.prepareStatement(TodoQuery.UPDATE_TODO).use { stmt ->
                 stmt.setString(1, sanitizedTodo.title)
                 stmt.setBoolean(2, sanitizedTodo.completed)
-                stmt.setInt(3, id)
+                stmt.setInt(3, idParam)
 
                 return@use stmt.executeUpdate()
             }
         }
     }
 
-    suspend fun updateDeleteStatus(id: Int): Int = withContext(dispatcher) {
+    suspend fun updateDeleteStatus(idParam: Int): Int = withContext(dispatcher) {
         ds.connection.use { conn ->
             conn.prepareStatement(TodoQuery.DELETE_TABLE_QUERY).use { stmt ->
-                stmt.setInt(1, id)
+                stmt.setInt(1, idParam)
                 return@use stmt.executeUpdate()
             }
         }
     }
 
-    suspend fun deleteTodo(id: Int): Int = withContext(dispatcher) {
+    suspend fun deleteTodo(idParam: Int): Int = withContext(dispatcher) {
         ds.connection.use { conn ->
             conn.prepareCall(TodoQuery.DELETE_TODO).use { stmt ->
-                stmt.setInt(1, id)
+                stmt.setInt(1, idParam)
                 stmt.registerOutParameter(2, Types.INTEGER)
 
                 stmt.execute()

@@ -29,7 +29,7 @@ class Config {
         val hostname = dotenv["DB_HOSTNAME"]
         val port     = dotenv["DB_PORT"] //"5432" //pgBouncer's port address
         val dbName   = dotenv["DB_NAME"]
-        val url      = "jdbc:$database://$hostname:$port/$dbName"
+        val url      = "jdbc:$database://$hostname:$port/$dbName?prepareThreshold=0"
         val username = dotenv["DB_USERNAME"]
         val password = dotenv["DB_PASSWORD"]
         HikariDataSource().also {

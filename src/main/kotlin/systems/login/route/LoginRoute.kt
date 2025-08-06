@@ -30,22 +30,32 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 val errors = validator.validateLoginInput(sanitizedLogin)
 
                 if (errors.isNotEmpty()) {
-                    return@post call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, "Validation Errors: ${errors.joinToString(", ")}"))
+                    return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        GlobalResponse(400, false, "Validation Errors: ${errors.joinToString(", ")}")
+                    )
                 }
                 // Get userId and hash
-                val userIdAndHash = loginController.getUserIdAndHash(sanitizedLogin.username)
-                    ?: return@post call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password."))
+                val userIdAndHash =
+                    loginController.getUserIdAndHash(sanitizedLogin.username) ?: return@post call.respond(
+                        HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password.")
+                    )
 
                 val (userId, storedHash) = userIdAndHash
 
                 // Check password
                 val argon2 = de.mkammerer.argon2.Argon2Factory.create()
                 if (!argon2.verify(storedHash, sanitizedLogin.password.toCharArray())) {
-                    return@post call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password."))
+                    return@post call.respond(
+                        HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password.")
+                    )
                 }
                 // Check email status
-                if (!loginController.checkEmailStatus(userId)) {
-                    return@post call.respond(HttpStatusCode.Forbidden, GlobalResponse(403, false, "Email not verified. Please check your email to verify."))
+                if (!loginController.checkEmailStatus(userId)) { //execute if userId is Pending
+                    return@post call.respond(
+                        HttpStatusCode.Forbidden,
+                        GlobalResponse(403, false, "Email not verified. Please check your email to verify.")
+                    )
                 }
                 // Generate JWT and session
                 val jwtToken = LoginJWT.generateJWT(userId)
@@ -56,10 +66,12 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 // Insert audit
                 loginController.insertAudit(userId, browserInfo)
                 // Create Response
-                val response = loginController.loginResponse(userId, sanitizedLogin.username, sanitizedLogin.password, jwtToken, sessionId, sessionDeleted)
+                val response = loginController.loginResponse(
+                    userId, sanitizedLogin.username, sanitizedLogin.password, jwtToken, sessionId, sessionDeleted
+                )
                 call.respond(HttpStatusCode.OK, response)
             } catch (e: Throwable) {
-                ErrorHandler.handle(call, e)
+                ErrorHandler().handle(call, e)
             }
         }
 
@@ -68,23 +80,26 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 val logoutData = call.receive<LogoutRequest>()
                 val result = loginController.logout(logoutData.userId)
                 if (!result) {
-                    return@post call.respond(HttpStatusCode.NotFound, GlobalResponse(404, false, "User session not found"))
+                    return@post call.respond(
+                        HttpStatusCode.NotFound, GlobalResponse(404, false, "User session not found")
+                    )
                 }
                 call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Logout successful"))
             } catch (e: Throwable) {
-                ErrorHandler.handle(call, e)
+                ErrorHandler().handle(call, e)
             }
         }
 
         get("/audit/{userId}") {
             try {
-                val userId = call.parameters["userId"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
+                val userId =
+                    call.parameters["userId"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
                 val auditData = loginController.viewAllAuditById(userId)
                 call.respond(HttpStatusCode.OK, auditData)
             } catch (e: IllegalArgumentException) {
                 call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, e.message ?: "Invalid request"))
             } catch (e: Throwable) {
-                ErrorHandler.handle(call, e)
+                ErrorHandler().handle(call, e)
             }
         }
     }

@@ -7,7 +7,10 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import io.ktor.server.response.respond
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.JsonNamingStrategy
 
+@OptIn(ExperimentalSerializationApi::class)
 fun Application.configureSerialization() {
     routing {
         get("/json/kotlinx-serialization") {
@@ -20,6 +23,7 @@ fun Application.configureSerialization() {
             isLenient = false
             ignoreUnknownKeys = false
             coerceInputValues = false
+            namingStrategy = JsonNamingStrategy.SnakeCase //adjust naming strategy of fields for JavaScript client handlers
         })
     }
 }
