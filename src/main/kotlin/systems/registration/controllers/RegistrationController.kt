@@ -2,6 +2,7 @@ package com.marlow.systems.registration.controllers
 
 import com.marlow.globals.GlobalMethods
 import com.marlow.globals.RegistrationResult
+import com.marlow.globals.VerificationResult
 import com.marlow.systems.registration.dto.RegistrationRequest
 import com.marlow.systems.registration.models.CredentialsModel
 import com.marlow.systems.registration.models.EmailSendingModel
@@ -142,7 +143,7 @@ class RegistrationController(
             }
 
             val verificationLink = "http://localhost:8080/api/user/email/verify?userId=${user.id}"
-            val dotEnv = dotenv()
+            val dotEnv           = dotenv()
 
             val emailLogs = EmailSendingModel(
                 userId        = user.id,
@@ -151,7 +152,7 @@ class RegistrationController(
                 receiverEmail = user.email,
                 status        = "PENDING",
                 subject       = "Welcome to our app, ${input.firstName}!",
-                body = """
+                body          = """
                                     Hello ${input.firstName},
                                     
                                     Your registration was successful!
@@ -194,28 +195,26 @@ class RegistrationController(
                 accessToken = accessToken
             )
 
-            RegistrationResult.Success("User registered successfully.")
+            RegistrationResult.Success("User registered successfully.", user.id)
         } catch (e: Exception) {
             e.printStackTrace()
             RegistrationResult.Failure("Internal server error: ${e.message}")
         }
     }
 
-    suspend fun verifyEmail(callParam: ApplicationCall) = withContext(dispatcher) {
+    suspend fun verifyEmail(callParam: ApplicationCall): VerificationResult = withContext(dispatcher) {
         val userIdParam = callParam.request.queryParameters["userId"]
         if (userIdParam == null) {
-            callParam.respondRedirect("http://127.0.0.1:5500/register.html?status=failed", permanent = false)
-            return@withContext
+            return@withContext VerificationResult.Failure("User Id was not passed Successfully")
         }
 
         val userId = userIdParam.toIntOrNull()
         if (userId == null) {
-            callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=invalid", permanent = false)
-            return@withContext
+            return@withContext VerificationResult.Failure("User Id was not passed Successfully")
         }
 
         val dateNow = LocalDate.now()
-        val status = "VERIFIED"
+        val status  = "VERIFIED"
 
         try {
             ds.connection.use { conn ->
@@ -225,16 +224,16 @@ class RegistrationController(
                     stmt.setInt(3, userId)
 
                     val rows = stmt.executeUpdate()
-                    if (rows > 0) {
-                        callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=success", permanent = false)
+                    return@use if (rows > 0) {
+                        VerificationResult.Success("User Email Verification Successful", userId = userId)
                     } else {
-                        callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=not_found", permanent = false)
+                        VerificationResult.NotFound("User Email Verification NotFound")
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            callParam.respondRedirect("http://127.0.0.1:5500/welcome.html?status=error", permanent = false)
+            return@withContext VerificationResult.Error("Unknown Error Occurred")
         }
     }
 }
