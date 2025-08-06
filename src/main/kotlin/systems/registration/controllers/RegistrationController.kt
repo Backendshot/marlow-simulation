@@ -2,6 +2,7 @@ package com.marlow.systems.registration.controllers
 
 import com.marlow.globals.GlobalMethods
 import com.marlow.globals.RegistrationResult
+import com.marlow.globals.VerificationResult
 import com.marlow.systems.registration.dto.RegistrationRequest
 import com.marlow.systems.registration.models.CredentialsModel
 import com.marlow.systems.registration.models.EmailSendingModel
@@ -12,7 +13,6 @@ import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
-import io.ktor.server.response.respondRedirect
 import java.time.LocalDate
 
 class RegistrationController(private val ds: HikariDataSource) {
@@ -187,24 +187,22 @@ class RegistrationController(private val ds: HikariDataSource) {
                 accessToken = accessToken
             )
 
-            RegistrationResult.Success("User registered successfully.")
+            RegistrationResult.Success("User registered successfully.", user.id)
         } catch (e: Exception) {
             e.printStackTrace()
             RegistrationResult.Failure("Internal server error: ${e.message}")
         }
     }
 
-    suspend fun verifyEmail(call: ApplicationCall) {
+    fun verifyEmail(call: ApplicationCall): VerificationResult {
         val userIdParam = call.request.queryParameters["userId"]
         if (userIdParam == null) {
-            call.respondRedirect("http://127.0.0.1:5500/register.html?status=failed", permanent = false)
-            return
+            return VerificationResult.Failure("User Id was not passed Successfully")
         }
 
         val userId = userIdParam.toIntOrNull()
         if (userId == null) {
-            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=invalid", permanent = false)
-            return
+            return VerificationResult.Failure("User Id was not passed Successfully")
         }
 
         val dateNow = LocalDate.now()
@@ -218,16 +216,16 @@ class RegistrationController(private val ds: HikariDataSource) {
                     stmt.setInt(3, userId)
 
                     val rows = stmt.executeUpdate()
-                    if (rows > 0) {
-                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=success", permanent = false)
+                    return if (rows > 0) {
+                        VerificationResult.Success("User Email Verification Successful", userId = userId)
                     } else {
-                        call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=not_found", permanent = false)
+                        VerificationResult.NotFound("User Email Verification NotFound")
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            call.respondRedirect("http://127.0.0.1:5500/welcome.html?status=error", permanent = false)
+            return VerificationResult.Error("Unknown Error Occurred")
         }
     }
 }
