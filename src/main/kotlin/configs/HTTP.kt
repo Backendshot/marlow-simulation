@@ -9,6 +9,7 @@ import io.ktor.server.routing.*
 
 fun Application.configureHTTP() {
     install(CORS) {
+        anyHost()
         allowCredentials = true
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
@@ -19,7 +20,6 @@ fun Application.configureHTTP() {
         allowMethod(HttpMethod.Delete)
         allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Options)
-        anyHost()
     }
     routing {
         openAPI(path = "openapi")
