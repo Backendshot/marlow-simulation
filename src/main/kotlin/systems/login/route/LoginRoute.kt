@@ -34,7 +34,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
             try {
                 val loginData = call.receive<LoginRequest>()
                 val browserInfo = LoginAudit().parseBrowser(call.request.headers["User-Agent"] ?: "Unknown")
-                // Validate input
+
                 val validator = Validator()
                 val sanitizedLogin = validator.sanitizeInput(loginData)
                 val errors = validator.validateLoginInput(sanitizedLogin)
@@ -42,30 +42,29 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 if (errors.isNotEmpty()) {
                     return@post call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, "Validation Errors: ${errors.joinToString(", ")}"))
                 }
-                // Get userId and hash
+
                 val userIdAndHash = loginController.getUserIdAndHash(sanitizedLogin.username)
                     ?: return@post call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password."))
 
                 val (userId, storedHash) = userIdAndHash
 
-                // Verify password
                 val argon2 = de.mkammerer.argon2.Argon2Factory.create()
                 if (!argon2.verify(storedHash, sanitizedLogin.password.toCharArray())) {
                     return@post call.respond(HttpStatusCode.Unauthorized, GlobalResponse(401, false, "Invalid username or password."))
                 }
-                // Check email status
+
                 if (!loginController.checkEmailStatus(userId)) {
                     return@post call.respond(HttpStatusCode.Forbidden, GlobalResponse(403, false, "Email not verified. Please check your email to verify."))
                 }
-                // Generate JWT and session
+
                 val jwtToken = LoginJWT.generateJWT(userId)
                 val sessionId = LoginSession.generatedSessionId()
                 val sessionDeleted = false
-                // Update session
+
                 loginController.updateSession(userId, sessionId, jwtToken, sessionDeleted)
-                // Insert audit
+
                 loginController.insertAudit(userId, browserInfo)
-                // Create Response
+
                 val response = loginController.loginResponse(
                     userId,
                     sanitizedLogin.username,
