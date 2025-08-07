@@ -71,7 +71,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 )
                 call.respond(HttpStatusCode.OK, response)
             } catch (e: Throwable) {
-                ErrorHandler().handle(call, e)
+                ErrorHandler.handle(call, e)
             }
         }
 

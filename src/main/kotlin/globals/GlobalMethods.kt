@@ -3,29 +3,23 @@ package com.marlow.globals
 import com.marlow.systems.registration.queries.UserQuery
 import de.mkammerer.argon2.Argon2Factory
 import io.github.cdimascio.dotenv.dotenv
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.request.forms.submitForm
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.Parameters
-import io.ktor.http.content.PartData
-import io.ktor.http.content.streamProvider
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.response.respond
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.server.application.*
+import io.ktor.server.response.*
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.sql.Connection
-import java.util.Properties
-import java.util.UUID
+import java.util.*
 
 class GlobalMethods() {
     fun getUserByUsername(connection: Connection, username: String): GlobalUserInfo? {
