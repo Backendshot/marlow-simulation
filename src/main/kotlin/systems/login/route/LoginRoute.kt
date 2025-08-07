@@ -27,7 +27,7 @@ import java.io.File
 fun Route.LoginRoute(ds: HikariDataSource) {
 
     val loginController = LoginController(ds)
-    val glovalMethod = GlobalMethods()
+    val globalMethod = GlobalMethods()
 
     route("/user") {
         post("/login") {
@@ -116,7 +116,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 multipart.forEachPart { part ->
                     if (part is PartData.FileItem && part.name == "image") {
                         try {
-                            uploadedFileName = glovalMethod.saveImage(part)
+                            uploadedFileName = globalMethod.saveImage(part)
                         } catch (e: Exception) {
                             imageError = "Invalid image format."
                         }

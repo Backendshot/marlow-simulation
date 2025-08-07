@@ -1,23 +1,24 @@
 import com.marlow.globals.GlobalResponse
+import com.marlow.globals.GlobalResponseData
 import com.marlow.globals.RegistrationResult
+import com.marlow.globals.VerificationResult
 import com.marlow.systems.registration.controllers.RegistrationController
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.*
 
 fun Route.registrationRouting(ds: HikariDataSource) {
     route("/user") {
         post ("/register") {
-            // TODO: Add a logger here
-
             val result = RegistrationController(ds).register(call)
 
             when (result) {
                 is RegistrationResult.Success -> {
                     call.respond(
                         HttpStatusCode.Created,
-                        GlobalResponse(code = 201, status = true, message = result.message)
+                        GlobalResponseData(code = 201, status = true, message = result.message, data = "user_id: " + result.userId)
                     )
                 }
                 is RegistrationResult.ValidationError -> {
@@ -41,7 +42,24 @@ fun Route.registrationRouting(ds: HikariDataSource) {
             }
         }
         get("/email/verify") {
-            RegistrationController(ds).verifyEmail(call)
+            val result    = RegistrationController(ds).verifyEmail(call)
+            val uiLink    = "http://127.0.0.1:5500/welcome.html?status="
+            val permanent = false
+
+            when (result) {
+                is VerificationResult.Success -> {
+                    call.respondRedirect(uiLink + "success", permanent)
+                }
+                is VerificationResult.Failure -> {
+                    call.respondRedirect(uiLink + "failed", permanent)
+                }
+                is VerificationResult.NotFound -> {
+                    call.respondRedirect(uiLink + "not_found", permanent)
+                }
+                is VerificationResult.Error -> {
+                    call.respondRedirect(uiLink + "error", permanent)
+                }
+            }
         }
     }
 }
