@@ -15,8 +15,8 @@ import registrationRouting
 
 fun Application.configureRouting(ds: HikariDataSource) {
     routing {
-        static("/image_uploads") {
-            files("image_uploads")
+        static("/image-uploads") {
+            files("image-uploads")
         }
         swaggerUI("/swagger/login", "src/main/kotlin/systems/login/documentation/documentation.yaml")
         swaggerUI("/swagger/registration", "src/main/kotlin/systems/registration/documentation/documentation.yaml")
