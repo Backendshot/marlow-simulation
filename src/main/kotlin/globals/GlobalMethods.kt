@@ -49,22 +49,23 @@ class GlobalMethods {
 
     fun saveImage(part: PartData.FileItem): String {
         val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
-        val originalName = part.originalFileName ?: ""
-        val extension = File(originalName).extension.lowercase()
+        val originalName      = part.originalFileName ?: ""
+        val extension         = File(originalName).extension.lowercase()
 
         require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
 
-        val fileName = "${UUID.randomUUID()}.$extension"
+        val inputStream    = part.streamProvider()
+        val byteArray      = inputStream.readBytes()
+        val maxSizeInBytes = 16 * 1024 * 1024
+
+        require(byteArray.size <= maxSizeInBytes) { "File size exceeds 16MB limit."}
+
+            val fileName = UUID.randomUUID().toString() + "." + extension
         val filePath = "image_uploads/$fileName"
 
-        val file = File(filePath)
-        file.parentFile.mkdirs()
-
-        // Copy the stream directly once
-        file.outputStream().use { output ->
-            part.streamProvider().use { input ->
-                input.copyTo(output)
-            }
+        File(filePath).apply {
+            parentFile.mkdirs()
+            outputStream().use { part.streamProvider().copyTo(it) }
         }
 
         return fileName

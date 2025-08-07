@@ -13,7 +13,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
-import java.io.File
 
 fun Route.todoRouting(ds: HikariDataSource) {
     route("/todos") {

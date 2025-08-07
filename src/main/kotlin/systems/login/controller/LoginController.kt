@@ -1,10 +1,9 @@
 package com.marlow.systems.login.controller
 
-import com.marlow.systems.login.model.*
-import com.marlow.systems.login.query.*
+import com.marlow.systems.login.model.AuditModel
+import com.marlow.systems.login.model.LoginModel
+import com.marlow.systems.login.query.LoginQuery
 import com.zaxxer.hikari.HikariDataSource
-import java.net.URLEncoder
-import java.sql.SQLException
 import java.sql.Timestamp
 import java.time.LocalDateTime
 
@@ -13,12 +12,12 @@ class LoginController(private val ds: HikariDataSource) {
     fun getUserIdAndHash(usernameParam: String): Pair<Int, String>? {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.GET_USER_PASS_BY_USERNAME).use { stmt ->
-                stmt.apply {setString(1, usernameParam)}
-                    .executeQuery().use { rs ->
-                        return if (rs.next()) {
-                            rs.getInt("user_id") to rs.getString("password")
-                        } else null
-                    }
+                stmt.setString(1, usernameParam)
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) {
+                        rs.getInt("user_id") to rs.getString("password")
+                    } else null
+                }
             }
         }
     }
@@ -26,13 +25,13 @@ class LoginController(private val ds: HikariDataSource) {
     fun checkEmailStatus(userIdParam: Int): Boolean {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
-                stmt.apply {setInt(1, userIdParam)}
-                    .executeQuery().use { rs ->
-                        if (rs.next()) {
-                            val status = rs.getString("status")
-                            return !status.equals("PENDING", ignoreCase = true)
-                        }
+                stmt.setInt(1, userIdParam)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        val status = rs.getString("status")
+                        return !status.equals("PENDING", ignoreCase = true)
                     }
+                }
             }
         }
         return false
@@ -41,96 +40,42 @@ class LoginController(private val ds: HikariDataSource) {
     fun updateSession(userIdParam: Int, sessionIdParam: String, jwtTokenParam: String, sessionDeletedParam: Boolean) {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { stmt ->
-                stmt.apply {
-                    setString(1, sessionIdParam)
-                    setString(2, jwtTokenParam)
-                    setBoolean(3, sessionDeletedParam)
-                    setInt(4, userIdParam)
-                    executeUpdate()
-                }
+                stmt.setString(1, sessionIdParam)
+                stmt.setString(2, jwtTokenParam)
+                stmt.setBoolean(3, sessionDeletedParam)
+                stmt.setInt(4, userIdParam)
+                stmt.executeUpdate()
             }
         }
     }
 
-    fun loginResponse(
-        userId: Int,
-        username: String,
-        jwtToken: String,
-        activeSession: String,
-        activeSessionDeleted: Boolean
-    ): LoginModel = LoginModel(
-        user_id = userId,
-        username = username,
-        jwt_token = jwtToken,
-        active_session = activeSession,
-        active_session_deleted = activeSessionDeleted
-    )
+    fun loginResponse(user_idParam: Int, usernameParam: String, passwordParam: String, jwt_tokenParam: String, active_sessionParam: String, active_session_deletedParam: Boolean,): LoginModel{
+        return LoginModel(
+            user_id = user_idParam,
+            username = usernameParam,
+            password = passwordParam,
+            jwt_token = jwt_tokenParam,
+            active_session = active_sessionParam,
+            active_session_deleted = active_session_deletedParam
+        )
+    }
 
     fun insertAudit(userId: Int, browserInfo: String) {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { stmt ->
-                stmt.apply {
-                    setInt(1, userId)
-                    setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
-                    setString(3, browserInfo)
-                    execute()
-                }
-            }
-        }
-    }
-
-    fun getUserProfile(userId: Int): UserProfileImage {
-        var fileName = ""
-        ds.connection.use { con ->
-            con.prepareStatement(LoginQuery.GET_IMAGE_QUERY).use { stmt ->
                 stmt.setInt(1, userId)
-                stmt.executeQuery().use { rs ->
-                    if (rs.next()) {
-                        fileName = rs.getString("image") ?: ""
-                    }
-                }
+                stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
+                stmt.setString(3, browserInfo)
+                stmt.execute()
             }
-        }
-        if (fileName.isBlank()) fileName = "error"
-
-        val fullUrl = "http://127.0.0.1:8080/image_uploads/${URLEncoder.encode(fileName, "UTF-8")}"
-        return UserProfileImage(fullUrl)
-    }
-
-    fun patchUserProfile(userIdParam: Int, imgFileParam: String): Boolean {
-        return try {
-            ds.connection.use { con ->
-                con.prepareStatement(LoginQuery.UPDATE_PROFILE_QUERY).use { stmt ->
-                    stmt.setString(1, imgFileParam)
-                    stmt.setInt(2, userIdParam)
-                    stmt.executeUpdate() > 0
-                }
-            }
-        } catch (e: SQLException) {
-            e.printStackTrace()
-            false
-        }
-    }
-    fun getCurrentUserImage(userId: Int): String? {
-        return try {
-            ds.connection.use { con ->
-                con.prepareStatement(LoginQuery.SELECT_CURRENT_USER_IMG).use { stmt ->
-                    stmt.setInt(1, userId)
-                    val rs = stmt.executeQuery()
-                    if (rs.next()) rs.getString("image") else null
-                }
-            }
-        } catch (e: SQLException) {
-            e.printStackTrace()
-            null
         }
     }
 
     fun viewAllAuditById(userIdParam: Int): List<AuditModel> {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY).use { stmt ->
-                stmt.apply {setInt(1, userIdParam)}
-                    .executeQuery().use { data ->
+                stmt.setInt(1, userIdParam)
+                stmt.executeQuery().use { data ->
                     val auditList = mutableListOf<AuditModel>()
                     while (data.next()) {
                         val id = data.getInt("id")
