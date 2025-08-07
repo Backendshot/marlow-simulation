@@ -21,7 +21,7 @@ import java.io.File
 import java.sql.Connection
 import java.util.*
 
-class GlobalMethods() {
+class GlobalMethods {
     fun getUserByUsername(connection: Connection, username: String): GlobalUserInfo? {
         val stmt = connection.prepareCall(UserQuery.GET_USER)
         stmt.setString(1, username)
@@ -46,42 +46,43 @@ class GlobalMethods() {
 
     fun saveImage(part: PartData.FileItem): String {
         val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
-        val originalName = part.originalFileName ?: ""
-        val extension = File(originalName).extension.lowercase()
+        val originalName      = part.originalFileName ?: ""
+        val extension         = File(originalName).extension.lowercase()
 
         require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
 
-        val inputStream = part.streamProvider()
-        val byteArray = inputStream.readBytes()
-        val maxSizeInBytes = 16 * 1024 * 1024
-
-        require(byteArray.size <= maxSizeInBytes) { "File size exceeds 16MB limit." }
-
-        val fileName = UUID.randomUUID().toString() + "." + extension
+        val fileName = "${UUID.randomUUID()}.$extension"
         val filePath = "image_uploads/$fileName"
 
-        File(filePath).apply {
-            parentFile.mkdirs()
-            outputStream().use { part.streamProvider().copyTo(it) }
+        val file = File(filePath)
+        file.parentFile.mkdirs()
+
+        // Copy the stream directly once
+        file.outputStream().use { output ->
+            part.streamProvider().use { input ->
+                input.copyTo(output)
+            }
         }
 
         return fileName
     }
 
     suspend fun getAccessToken(): String {
-        val dotEnv = dotenv()
-        val clientId = dotEnv["GMAIL_CLIENT_ID"] ?: return "Missing GMAIL_CLIENT_ID env variable."
+        val dotEnv       = dotenv()
+        val clientId     = dotEnv["GMAIL_CLIENT_ID"] ?: return "Missing GMAIL_CLIENT_ID env variable."
         val clientSecret = dotEnv["GMAIL_CLIENT_SECRET"] ?: return "Missing GMAIL_CLIENT_SECRET env variable."
         val refreshToken = dotEnv["GMAIL_REFRESH_TOKEN"] ?: return "Missing GMAIL_REFRESH_TOKEN env variable."
-        val client = HttpClient(CIO)
+        val client       = HttpClient(CIO)
 
         val response = client.submitForm(
-            url = "https://oauth2.googleapis.com/token", formParameters = Parameters.build {
+            url = "https://oauth2.googleapis.com/token",
+            formParameters = Parameters.build {
                 append("client_id", clientId)
                 append("client_secret", clientSecret)
                 append("refresh_token", refreshToken)
                 append("grant_type", "refresh_token")
-            })
+            }
+        )
 
         val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
         return json["access_token"]?.jsonPrimitive?.content ?: throw IllegalStateException("Failed to get access token")
@@ -90,9 +91,9 @@ class GlobalMethods() {
     fun sendEmail(
         recipient: String, subject: String?, body: String, accessToken: String
     ) {
-        val dotEnv = dotenv()
+        val dotEnv    = dotenv()
         val userEmail = dotEnv["GMAIL_EMAIL"]
-        val props = Properties().apply {
+        val props     = Properties().apply {
             put("mail.smtp.starttls.enable", "true")
             put("mail.smtp.auth.mechanisms", "XOAUTH2")
             put("mail.smtp.auth", "true")
@@ -118,18 +119,9 @@ class GlobalMethods() {
 object ErrorHandler {
     suspend fun handle(call: ApplicationCall, e: Throwable) {
         when (e) {
-            is IllegalArgumentException -> call.respond(
-                HttpStatusCode.BadRequest, GlobalResponse(400, false, e.localizedMessage ?: "Invalid request")
-            )
-
-            is IllegalStateException -> call.respond(
-                HttpStatusCode.Forbidden, GlobalResponse(403, false, e.localizedMessage ?: "Forbidden")
-            )
-
-            else -> call.respond(
-                HttpStatusCode.InternalServerError,
-                GlobalResponse(500, false, e.localizedMessage ?: "Internal server error")
-            )
+            is IllegalArgumentException -> call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, e.localizedMessage ?: "Invalid request"))
+            is IllegalStateException -> call.respond(HttpStatusCode.Forbidden, GlobalResponse(403, false, e.localizedMessage ?: "Forbidden"))
+            else -> call.respond(HttpStatusCode.InternalServerError, GlobalResponse(500, false, e.localizedMessage ?: "Internal server error"))
         }
     }
 }

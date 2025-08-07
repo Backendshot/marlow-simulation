@@ -186,13 +186,18 @@ class RegistrationController(
                 }
             }
 
-            val accessToken = methods.getAccessToken()
-            methods.sendEmail(
-                recipient   = information.email,
-                subject     = emailLogs.subject,
-                body        = emailLogs.body,
-                accessToken = accessToken
-            )
+            try {
+                val accessToken = methods.getAccessToken()
+                methods.sendEmail(
+                    recipient = information.email,
+                    subject = emailLogs.subject,
+                    body = emailLogs.body,
+                    accessToken = accessToken
+                )
+            } catch (emailEx: Exception) {
+                println("⚠️ Failed to send email: ${emailEx.message}")
+                // You can optionally log this to DB
+            }
 
             RegistrationResult.Success("User registered successfully.", user.id)
         } catch (e: Exception) {
