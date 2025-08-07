@@ -86,7 +86,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 }
                 call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Logout successful"))
             } catch (e: Throwable) {
-                ErrorHandler().handle(call, e)
+                ErrorHandler.handle(call, e)
             }
         }
 
@@ -99,7 +99,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
             } catch (e: IllegalArgumentException) {
                 call.respond(HttpStatusCode.BadRequest, GlobalResponse(400, false, e.message ?: "Invalid request"))
             } catch (e: Throwable) {
-                ErrorHandler().handle(call, e)
+                ErrorHandler.handle(call, e)
             }
         }
     }

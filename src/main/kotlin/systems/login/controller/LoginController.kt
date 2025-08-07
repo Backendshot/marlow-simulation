@@ -4,21 +4,18 @@ import com.marlow.systems.login.model.AuditModel
 import com.marlow.systems.login.model.LoginModel
 import com.marlow.systems.login.query.LoginQuery
 import com.zaxxer.hikari.HikariDataSource
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 
-class LoginController(private val ds: HikariDataSource, private val dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+class LoginController(private val ds: HikariDataSource) {
 
-    suspend fun getUserIdAndHash(usernameParam: String): Pair<Int, String>? = withContext(dispatcher) {
+    fun getUserIdAndHash(usernameParam: String): Pair<Int, String>? {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.GET_USER_PASS_BY_USERNAME).use { stmt ->
                 stmt.setString(1, usernameParam)
                 stmt.executeQuery().use { rs ->
-                    return@use if (rs.next()) {
+                    return if (rs.next()) {
                         rs.getInt("user_id") to rs.getString("password")
                     } else null
                 }
@@ -26,7 +23,7 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
         }
     }
 
-    suspend fun checkEmailStatus(userIdParam: Int): Boolean = withContext(dispatcher) {
+    fun checkEmailStatus(userIdParam: Int): Boolean {
         ds.connection.use { conn ->
             conn.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
                 stmt.setInt(1, userIdParam)
@@ -34,7 +31,7 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
                     if (rs.next()) {
                         val status = rs.getString("status")
                         println(status)
-                        return@withContext !status.equals(
+                        return !status.equals(
                             "PENDING", ignoreCase = true
                         ) //return true if the status is Verified and false if the status is Pending
                     }
@@ -42,12 +39,12 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
                 }
             }
         }
-        return@withContext false
+        return false
     }
 
-    suspend fun updateSession(
+    fun updateSession(
         userIdParam: Int, sessionIdParam: String, jwtTokenParam: String, sessionDeletedParam: Boolean
-    ) = withContext(dispatcher) {
+    ) {
         ds.connection.use { con ->
             con.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { stmt ->
                 stmt.setString(1, sessionIdParam)
@@ -59,15 +56,15 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
         }
     }
 
-    suspend fun loginResponse(
+    fun loginResponse(
         userIdParam: Int,
         usernameParam: String,
         passwordParam: String,
         jwtTokenParam: String,
         activeSessionParam: String,
         activeSessionDeletedParam: Boolean,
-    ): LoginModel = withContext(dispatcher) {
-        return@withContext LoginModel(
+    ): LoginModel {
+        return LoginModel(
             userId = userIdParam,
             username = usernameParam,
             password = passwordParam,
@@ -77,7 +74,7 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
         )
     }
 
-    suspend fun insertAudit(userIdParam: Int, browserInfoParam: String) = withContext(dispatcher) {
+    fun insertAudit(userIdParam: Int, browserInfoParam: String) {
         ds.connection.use { conn ->
             conn.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { stmt ->
                 stmt.setInt(1, userIdParam)
@@ -88,7 +85,7 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
         }
     }
 
-    suspend fun viewAllAuditById(userIdParam: Int): MutableList<AuditModel> = withContext(dispatcher) {
+    fun viewAllAuditById(userIdParam: Int): MutableList<AuditModel> {
         val auditList = mutableListOf<AuditModel>()
         ds.connection.use { conn ->
             conn.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY).use { stmt ->
@@ -105,15 +102,15 @@ class LoginController(private val ds: HikariDataSource, private val dispatcher: 
                 }
             }
         }
-        return@withContext auditList
+        return auditList
     }
 
-    suspend fun logout(userIdParam: Int): Boolean = withContext(dispatcher) {
+    fun logout(userIdParam: Int): Boolean {
         ds.connection.use { conn ->
             conn.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
                 stmt.setInt(1, userIdParam)
                 val rowsUpdated = stmt.executeUpdate()
-                return@withContext rowsUpdated > 0
+                return rowsUpdated > 0
             }
         }
     }

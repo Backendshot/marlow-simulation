@@ -27,13 +27,13 @@ import java.sql.Connection
 import java.util.Properties
 import java.util.UUID
 
-class GlobalMethods(private val dispatcher: CoroutineDispatcher = Dispatchers.IO) {
-    suspend fun getUserByUsername(connection: Connection, username: String): GlobalUserInfo? = withContext(dispatcher) {
+class GlobalMethods() {
+    fun getUserByUsername(connection: Connection, username: String): GlobalUserInfo? {
         val stmt = connection.prepareCall(UserQuery.GET_USER)
         stmt.setString(1, username)
         val result = stmt.executeQuery()
 
-        return@withContext if (result.next()) {
+        return if (result.next()) {
             val id = result.getInt("id")
             val email = result.getString("email")
             connection.close()
@@ -44,24 +44,24 @@ class GlobalMethods(private val dispatcher: CoroutineDispatcher = Dispatchers.IO
         }
     }
 
-    suspend fun hashPassword(password: String): String = withContext(dispatcher) {
+    fun hashPassword(password: String): String {
         val hasher = Argon2Factory.create()
 
-        return@withContext hasher.hash(2, 65536, 1, password.toCharArray())
+        return hasher.hash(2, 65536, 1, password.toCharArray())
     }
 
-    suspend fun saveImage(part: PartData.FileItem): String = withContext(dispatcher) {
+    fun saveImage(part: PartData.FileItem): String {
         val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
         val originalName = part.originalFileName ?: ""
         val extension = File(originalName).extension.lowercase()
 
         require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
 
-        val inputStream    = part.streamProvider()
-        val byteArray      = inputStream.readBytes()
+        val inputStream = part.streamProvider()
+        val byteArray = inputStream.readBytes()
         val maxSizeInBytes = 16 * 1024 * 1024
 
-        require(byteArray.size <= maxSizeInBytes) { "File size exceeds 16MB limit."}
+        require(byteArray.size <= maxSizeInBytes) { "File size exceeds 16MB limit." }
 
         val fileName = UUID.randomUUID().toString() + "." + extension
         val filePath = "image_uploads/$fileName"
@@ -71,16 +71,14 @@ class GlobalMethods(private val dispatcher: CoroutineDispatcher = Dispatchers.IO
             outputStream().use { part.streamProvider().copyTo(it) }
         }
 
-        return@withContext fileName
+        return fileName
     }
 
-    suspend fun getAccessToken(): String = withContext(dispatcher) {
+    suspend fun getAccessToken(): String {
         val dotEnv = dotenv()
-        val clientId = dotEnv["GMAIL_CLIENT_ID"] ?: return@withContext "Missing GMAIL_CLIENT_ID env variable."
-        val clientSecret =
-            dotEnv["GMAIL_CLIENT_SECRET"] ?: return@withContext "Missing GMAIL_CLIENT_SECRET env variable."
-        val refreshToken =
-            dotEnv["GMAIL_REFRESH_TOKEN"] ?: return@withContext "Missing GMAIL_REFRESH_TOKEN env variable."
+        val clientId = dotEnv["GMAIL_CLIENT_ID"] ?: return "Missing GMAIL_CLIENT_ID env variable."
+        val clientSecret = dotEnv["GMAIL_CLIENT_SECRET"] ?: return "Missing GMAIL_CLIENT_SECRET env variable."
+        val refreshToken = dotEnv["GMAIL_REFRESH_TOKEN"] ?: return "Missing GMAIL_REFRESH_TOKEN env variable."
         val client = HttpClient(CIO)
 
         val response = client.submitForm(
@@ -92,13 +90,12 @@ class GlobalMethods(private val dispatcher: CoroutineDispatcher = Dispatchers.IO
             })
 
         val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-        return@withContext json["access_token"]?.jsonPrimitive?.content
-            ?: throw IllegalStateException("Failed to get access token")
+        return json["access_token"]?.jsonPrimitive?.content ?: throw IllegalStateException("Failed to get access token")
     }
 
-    suspend fun sendEmail(
+    fun sendEmail(
         recipient: String, subject: String?, body: String, accessToken: String
-    ) = withContext(dispatcher) {
+    ) {
         val dotEnv = dotenv()
         val userEmail = dotEnv["GMAIL_EMAIL"]
         val props = Properties().apply {
@@ -124,8 +121,8 @@ class GlobalMethods(private val dispatcher: CoroutineDispatcher = Dispatchers.IO
     }
 }
 
-class ErrorHandler(private val dispatcher: CoroutineDispatcher = Dispatchers.IO) {
-    suspend fun handle(call: ApplicationCall, e: Throwable) = withContext(dispatcher) {
+object ErrorHandler {
+    suspend fun handle(call: ApplicationCall, e: Throwable) {
         when (e) {
             is IllegalArgumentException -> call.respond(
                 HttpStatusCode.BadRequest, GlobalResponse(400, false, e.localizedMessage ?: "Invalid request")
