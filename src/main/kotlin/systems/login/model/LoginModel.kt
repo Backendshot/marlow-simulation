@@ -46,10 +46,8 @@ data class LogoutRequest(
 class Validator {
     fun <T> validateLoginInput(data: T): List<String> {
         val errors = mutableListOf<String>()
-        if (data is LoginModel) {
-            if (data.username.isBlank()) {
-                errors.add("Username cannot be empty")
-            }
+        if (data is LoginModel && data.username.isBlank()) {
+            errors.add("Username cannot be empty")
         }
         return errors
     }

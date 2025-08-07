@@ -107,7 +107,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
         patch("/profile-image/update/{userId}") {
             try {
                 val userId = call.parameters["userId"]?.toIntOrNull()
-                    ?: return@patch call.respond(HttpStatusCode.BadRequest,GlobalResponse(404, false, "Invalid User ID"))
+                    ?: return@patch call.respond(HttpStatusCode.BadRequest,GlobalResponse(404, false, "Invalid User ID for image update"))
 
                 val multipart = call.receiveMultipart()
                 var uploadedFileName: String? = null
@@ -134,6 +134,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 currentImageFilename?.let { filename ->
                     val file = File("image_uploads/$filename")
                     if (file.exists()) file.delete()
+                    return@patch call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Image File Removed"))
                 }
 
                 val result = loginController.patchUserProfile(userId, uploadedFileName)

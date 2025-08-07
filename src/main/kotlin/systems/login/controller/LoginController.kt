@@ -1,16 +1,12 @@
 package com.marlow.systems.login.controller
 
-import com.marlow.globals.GlobalMethods
 import com.marlow.systems.login.model.*
 import com.marlow.systems.login.query.*
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
 import java.net.URLEncoder
 import java.sql.SQLException
 import java.sql.Timestamp
 import java.time.LocalDateTime
-import kotlin.collections.set
 
 class LoginController(private val ds: HikariDataSource) {
 
