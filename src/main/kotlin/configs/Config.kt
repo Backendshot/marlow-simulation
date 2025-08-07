@@ -29,9 +29,10 @@ class Config {
         val hostname = dotenv["DB_HOSTNAME"]
         val port     = dotenv["DB_PORT"] //"5432" //pgBouncer's port address
         val dbName   = dotenv["DB_NAME"]
-        val url      = "jdbc:$database://$hostname:$port/$dbName"
         val username = dotenv["DB_USERNAME"]
         val password = dotenv["DB_PASSWORD"]
+        val url      = "jdbc:$database://$hostname:$port/$dbName?prepareThreshold=0"
+//        val supabaseUrl = "postgres://$username:$password@aws-0-[aws-region].pooler.supabase.com:6543/$dbName?options=reference%3D[project-ref]"
         HikariDataSource().also {
             // set the hikari basic config
             it.jdbcUrl = url

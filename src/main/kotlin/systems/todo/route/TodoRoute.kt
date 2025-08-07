@@ -5,29 +5,24 @@ import com.marlow.globals.GlobalResponseData
 import com.marlow.systems.todo.controller.TodoController
 import com.marlow.systems.todo.model.Todo
 import com.zaxxer.hikari.HikariDataSource
-import de.mkammerer.argon2.Argon2Factory
 import io.ktor.http.*
-import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
-import java.io.File
 
 fun Route.todoRouting(ds: HikariDataSource) {
     route("/todos") {
         get {
             call.respond(
-                    HttpStatusCode.OK,
-                    GlobalResponseData(200, true, "Success", TodoController(ds).fetchTodos())
+                HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).fetchTodos())
             )
         }
         get("/{id?}") {
             val id: Int = call.requireIntParam("id")
             call.respond(
-                    HttpStatusCode.OK,
-                    GlobalResponseData(200, true, "Success", TodoController(ds).fetchTodoById(id))
+                HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).fetchTodoById(id))
             )
         }
         get("/import-data-todos") {
@@ -38,29 +33,14 @@ fun Route.todoRouting(ds: HikariDataSource) {
     route("/api/v2/") {
         get("readall") {
             call.respond(
-                    HttpStatusCode.OK,
-                    GlobalResponseData(200, true, "Success", TodoController(ds).readAllTodos())
+                HttpStatusCode.OK, GlobalResponseData(200, true, "Success", TodoController(ds).readAllTodos())
             )
         }
 
         get("read/{user_id?}") {
-            try {
-                val userId =
-                        call.parameters["user_id"]?.toIntOrNull()
-                                ?: throw IllegalArgumentException("Invalid User ID")
-                val todos = TodoController(ds).viewAllTodosById(userId)
-                call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todos))
-            } catch (e: IllegalArgumentException) {
-                call.respond(
-                        HttpStatusCode.BadRequest,
-                        GlobalResponse(400, false, e.message ?: "Invalid request")
-                )
-            } catch (e: Exception) {
-                call.respond(
-                        HttpStatusCode.InternalServerError,
-                        GlobalResponse(500, false, e.localizedMessage)
-                )
-            }
+            val userId = call.parameters["user_id"]?.toIntOrNull() ?: throw IllegalArgumentException("Invalid User ID")
+            val todos = TodoController(ds).viewAllTodosById(userId)
+            call.respond(HttpStatusCode.OK, GlobalResponseData(200, true, "Success", todos))
         }
 
         post("create") {
@@ -87,11 +67,9 @@ fun Route.todoRouting(ds: HikariDataSource) {
 
         delete("delete/{id?}") {
             val id = call.requireIntParam("id")
-            if (TodoController(ds).deleteTodo(id) == 0)
-                    throw Exception("Deletion not successful, please try again.")
+            if (TodoController(ds).deleteTodo(id) == 0) throw Exception("Deletion not successful, please try again.")
             call.respond(
-                    status = HttpStatusCode.OK,
-                    GlobalResponse(200, true, "Todo deleted successfully.")
+                status = HttpStatusCode.OK, GlobalResponse(200, true, "Todo deleted successfully.")
             )
         }
 
@@ -101,8 +79,7 @@ fun Route.todoRouting(ds: HikariDataSource) {
                 throw Exception("Deletion of table not successful, please try again.")
             }
             call.respond(
-                    status = HttpStatusCode.OK,
-                    GlobalResponse(200, true, "Table marked as deleted successfully.")
+                status = HttpStatusCode.OK, GlobalResponse(200, true, "Table marked as deleted successfully.")
             )
         }
     }

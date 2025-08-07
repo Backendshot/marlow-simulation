@@ -24,8 +24,8 @@ class LoginController(private val ds: HikariDataSource) {
     }
 
     fun checkEmailStatus(userIdParam: Int): Boolean {
-        ds.connection.use { con ->
-            con.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
+        ds.connection.use { conn ->
+            conn.prepareStatement(LoginQuery.CHECK_EMAIL_STATUS_QUERY).use { stmt ->
                 stmt.apply {setInt(1, userIdParam)}
                     .executeQuery().use { rs ->
                         if (rs.next()) {
@@ -39,8 +39,8 @@ class LoginController(private val ds: HikariDataSource) {
     }
 
     fun updateSession(userIdParam: Int, sessionIdParam: String, jwtTokenParam: String, sessionDeletedParam: Boolean) {
-        ds.connection.use { con ->
-            con.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { stmt ->
+        ds.connection.use { conn ->
+            conn.prepareStatement(LoginQuery.UPDATE_SESSION_QUERY).use { stmt ->
                 stmt.apply {
                     setString(1, sessionIdParam)
                     setString(2, jwtTokenParam)
@@ -59,16 +59,16 @@ class LoginController(private val ds: HikariDataSource) {
         activeSession: String,
         activeSessionDeleted: Boolean
     ): LoginModel = LoginModel(
-        user_id = userId,
+        userId = userId,
         username = username,
-        jwt_token = jwtToken,
-        active_session = activeSession,
-        active_session_deleted = activeSessionDeleted
+        jwtToken = jwtToken,
+        activeSession = activeSession,
+        activeSessionDeleted = activeSessionDeleted
     )
 
     fun insertAudit(userId: Int, browserInfo: String) {
-        ds.connection.use { con ->
-            con.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { stmt ->
+        ds.connection.use { conn ->
+            conn.prepareStatement(LoginQuery.INSERT_AUDIT_QUERY).use { stmt ->
                 stmt.apply {
                     setInt(1, userId)
                     setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()))
@@ -127,8 +127,8 @@ class LoginController(private val ds: HikariDataSource) {
     }
 
     fun viewAllAuditById(userIdParam: Int): List<AuditModel> {
-        ds.connection.use { con ->
-            con.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY).use { stmt ->
+        ds.connection.use { conn ->
+            conn.prepareStatement(LoginQuery.GET_AUDIT_BY_ID_QUERY).use { stmt ->
                 stmt.apply {setInt(1, userIdParam)}
                     .executeQuery().use { data ->
                     val auditList = mutableListOf<AuditModel>()
@@ -146,8 +146,8 @@ class LoginController(private val ds: HikariDataSource) {
     }
 
     fun logout(userIdParam: Int): Boolean {
-        ds.connection.use { con ->
-            con.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
+        ds.connection.use { conn ->
+            conn.prepareStatement(LoginQuery.LOGOUT_SESSION_QUERY).use { stmt ->
                 stmt.setInt(1, userIdParam)
                 val rowsUpdated = stmt.executeUpdate()
                 return rowsUpdated > 0

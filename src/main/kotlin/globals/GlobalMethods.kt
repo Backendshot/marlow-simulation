@@ -3,16 +3,14 @@ package com.marlow.globals
 import com.marlow.systems.registration.queries.UserQuery
 import de.mkammerer.argon2.Argon2Factory
 import io.github.cdimascio.dotenv.dotenv
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.request.forms.submitForm
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.Parameters
-import io.ktor.http.content.PartData
-import io.ktor.http.content.streamProvider
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.response.respond
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.server.application.*
+import io.ktor.server.response.*
 import jakarta.mail.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
@@ -21,8 +19,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.sql.Connection
-import java.util.Properties
-import java.util.UUID
+import java.util.*
 
 class GlobalMethods {
     fun getUserByUsername(connection: Connection, username: String): GlobalUserInfo? {
@@ -31,7 +28,7 @@ class GlobalMethods {
         val result = stmt.executeQuery()
 
         return if (result.next()) {
-            val id    = result.getInt("id")
+            val id = result.getInt("id")
             val email = result.getString("email")
             connection.close()
             GlobalUserInfo(id, email)
@@ -49,13 +46,13 @@ class GlobalMethods {
 
     fun saveImage(part: PartData.FileItem): String {
         val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
-        val originalName = part.originalFileName ?: ""
-        val extension = File(originalName).extension.lowercase()
+        val originalName      = part.originalFileName ?: ""
+        val extension         = File(originalName).extension.lowercase()
 
         require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
 
         val fileName = "${UUID.randomUUID()}.$extension"
-        val filePath = "image_uploads/$fileName"
+        val filePath = "image-uploads/$fileName"
 
         val file = File(filePath)
         file.parentFile.mkdirs()
@@ -88,15 +85,11 @@ class GlobalMethods {
         )
 
         val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-        return json["access_token"]?.jsonPrimitive?.content
-            ?: throw IllegalStateException("Failed to get access token")
+        return json["access_token"]?.jsonPrimitive?.content ?: throw IllegalStateException("Failed to get access token")
     }
 
     fun sendEmail(
-        recipient: String,
-        subject: String?,
-        body: String,
-        accessToken: String
+        recipient: String, subject: String?, body: String, accessToken: String
     ) {
         val dotEnv    = dotenv()
         val userEmail = dotEnv["GMAIL_EMAIL"]

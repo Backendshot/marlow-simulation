@@ -4,11 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LoginModel(
-    val user_id: Int,
+    val userId: Int,
     val username: String,
-    val jwt_token: String? = null,
-    val active_session: String? = null,
-    val active_session_deleted: Boolean? = null
+    val jwtToken: String? = null,
+    val activeSession: String? = null,
+    val activeSessionDeleted: Boolean? = null,
 )
 
 @Serializable
@@ -26,21 +26,21 @@ data class ImageUploadResponse(
 @Serializable
 data class AuditModel(
     val id: Int,
-    val user_id: Int,
+    val userId: Int,
     val timestamp: String,
     val browser: String,
 )
 
 @Serializable
 data class LoginRequest(
-    val user_id: Int? = null, 
+    val userId: Int? = null,
     val username: String, 
     val password: String
 )
 
 @Serializable
 data class LogoutRequest(
-    val user_id: Int
+    val userId: Int
 )
 
 class Validator {
