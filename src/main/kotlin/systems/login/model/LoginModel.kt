@@ -6,10 +6,21 @@ import kotlinx.serialization.Serializable
 data class LoginModel(
     val user_id: Int,
     val username: String,
-    val password: String,
     val jwt_token: String? = null,
     val active_session: String? = null,
-    val active_session_deleted: Boolean? = null,
+    val active_session_deleted: Boolean? = null
+)
+
+@Serializable
+data class UserProfileImage(
+    val userImg: String
+)
+
+@Serializable
+data class ImageUploadResponse(
+    val success: Boolean,
+    val message: String,
+    val filename: String
 )
 
 @Serializable
@@ -35,13 +46,8 @@ data class LogoutRequest(
 class Validator {
     fun <T> validateLoginInput(data: T): List<String> {
         val errors = mutableListOf<String>()
-        if (data is LoginModel) {
-            if (data.username.isBlank()) {
-                errors.add("Username cannot be empty")
-            }
-            if (data.password.isBlank()) {
-                errors.add("Password cannot be empty")
-            }
+        if (data is LoginModel && data.username.isBlank()) {
+            errors.add("Username cannot be empty")
         }
         return errors
     }
