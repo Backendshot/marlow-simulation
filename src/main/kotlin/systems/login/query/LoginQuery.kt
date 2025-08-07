@@ -11,5 +11,8 @@ class LoginQuery {
         const val GET_AUDIT_BY_ID_QUERY = "SELECT * FROM audit_trail WHERE user_id = ? ORDER BY timestamp DESC"
         const val CHECK_EMAIL_STATUS_QUERY = "SELECT status FROM tbl_email_sending WHERE user_id = ?"
         const val GET_BEARER_TOKEN = "SELECT jwt_token FROM tbl_credentials WHERE id = ?"
+        const val GET_IMAGE_QUERY = "SELECT image FROM tbl_information WHERE id = ?"
+        const val UPDATE_PROFILE_QUERY = "UPDATE tbl_information SET image = ? WHERE id = ?"
+        const val SELECT_CURRENT_USER_IMG = "SELECT image FROM tbl_information WHERE id = ?"
     }
 }

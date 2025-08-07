@@ -7,7 +7,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.*
 
 fun Route.registrationRouting(ds: HikariDataSource) {
-    route("/api/user") {
+    route("/user") {
         post ("/register") {
             // TODO: Add a logger here
 

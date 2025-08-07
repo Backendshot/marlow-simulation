@@ -1,10 +1,16 @@
 package com.marlow.systems.login.controller
 
+import com.marlow.globals.GlobalMethods
 import com.marlow.systems.login.model.*
 import com.marlow.systems.login.query.*
 import com.zaxxer.hikari.HikariDataSource
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import java.net.URLEncoder
+import java.sql.SQLException
 import java.sql.Timestamp
 import java.time.LocalDateTime
+import kotlin.collections.set
 
 class LoginController(private val ds: HikariDataSource) {
 
@@ -51,19 +57,17 @@ class LoginController(private val ds: HikariDataSource) {
     }
 
     fun loginResponse(
-        userIdParam: Int,
-        usernameParam: String,
-        passwordParam: String,
-        jwtTokenParam: String,
-        activeSessionParam: String,
-        activeSessionDeletedParam: Boolean
+        userId: Int,
+        username: String,
+        jwtToken: String,
+        activeSession: String,
+        activeSessionDeleted: Boolean
     ): LoginModel = LoginModel(
-        user_id = userIdParam,
-        username = usernameParam,
-        password = passwordParam,
-        jwt_token = jwtTokenParam,
-        active_session = activeSessionParam,
-        active_session_deleted = activeSessionDeletedParam
+        user_id = userId,
+        username = username,
+        jwt_token = jwtToken,
+        active_session = activeSession,
+        active_session_deleted = activeSessionDeleted
     )
 
     fun insertAudit(userId: Int, browserInfo: String) {
@@ -76,6 +80,53 @@ class LoginController(private val ds: HikariDataSource) {
                     execute()
                 }
             }
+        }
+    }
+
+    fun getUserProfile(userId: Int): UserProfileImage {
+        var fileName = ""
+        ds.connection.use { con ->
+            con.prepareStatement(LoginQuery.GET_IMAGE_QUERY).use { stmt ->
+                stmt.setInt(1, userId)
+                stmt.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        fileName = rs.getString("image") ?: ""
+                    }
+                }
+            }
+        }
+        if (fileName.isBlank()) fileName = "error"
+
+        val fullUrl = "http://127.0.0.1:8080/image_uploads/${URLEncoder.encode(fileName, "UTF-8")}"
+        return UserProfileImage(fullUrl)
+    }
+
+    fun patchUserProfile(userIdParam: Int, imgFileParam: String): Boolean {
+        return try {
+            ds.connection.use { con ->
+                con.prepareStatement(LoginQuery.UPDATE_PROFILE_QUERY).use { stmt ->
+                    stmt.setString(1, imgFileParam)
+                    stmt.setInt(2, userIdParam)
+                    stmt.executeUpdate() > 0
+                }
+            }
+        } catch (e: SQLException) {
+            e.printStackTrace()
+            false
+        }
+    }
+    fun getCurrentUserImage(userId: Int): String? {
+        return try {
+            ds.connection.use { con ->
+                con.prepareStatement(LoginQuery.SELECT_CURRENT_USER_IMG).use { stmt ->
+                    stmt.setInt(1, userId)
+                    val rs = stmt.executeQuery()
+                    if (rs.next()) rs.getString("image") else null
+                }
+            }
+        } catch (e: SQLException) {
+            e.printStackTrace()
+            null
         }
     }
 

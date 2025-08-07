@@ -179,13 +179,18 @@ class RegistrationController(private val ds: HikariDataSource) {
                 }
             }
 
-            val accessToken = methods.getAccessToken()
-            methods.sendEmail(
-                recipient   = information.email,
-                subject     = emailLogs.subject,
-                body        = emailLogs.body,
-                accessToken = accessToken
-            )
+            try {
+                val accessToken = methods.getAccessToken()
+                methods.sendEmail(
+                    recipient = information.email,
+                    subject = emailLogs.subject,
+                    body = emailLogs.body,
+                    accessToken = accessToken
+                )
+            } catch (emailEx: Exception) {
+                println("⚠️ Failed to send email: ${emailEx.message}")
+                // You can optionally log this to DB
+            }
 
             RegistrationResult.Success("User registered successfully.")
         } catch (e: Exception) {
