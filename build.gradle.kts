@@ -6,6 +6,12 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 group = "com.marlow"
 version = "0.0.1"
 
