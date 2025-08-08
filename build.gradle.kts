@@ -19,9 +19,9 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
-kotlin {
-    jvmToolchain(18)
-}
+//kotlin {
+//    jvmToolchain(18)
+//}
 
 repositories {
     mavenCentral()
