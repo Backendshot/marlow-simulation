@@ -110,4 +110,5 @@ dependencies {
     api(libs.opentelemetry.exporter.logging)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.jakarta.mail)
+    implementation(libs.ktor.client.auth)
 }

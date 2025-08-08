@@ -31,8 +31,7 @@ class Config {
         val dbName   = dotenv["DB_NAME"]
         val username = dotenv["DB_USERNAME"]
         val password = dotenv["DB_PASSWORD"]
-        val url      = "jdbc:$database://$hostname:$port/$dbName?prepareThreshold=0"
-//        val supabaseUrl = "postgres://$username:$password@aws-0-[aws-region].pooler.supabase.com:6543/$dbName?options=reference%3D[project-ref]"
+        val url      = dotenv["DB_URL"]
         HikariDataSource().also {
             // set the hikari basic config
             it.jdbcUrl = url
@@ -59,6 +58,8 @@ class Config {
 
             it.leakDetectionThreshold = 2000
 
+            it.logWriter = PrintWriter(System.out)
+
             return it
         }
     }
@@ -79,7 +80,7 @@ class Config {
         props.setProperty("dataSource.portNumber", port)
         props.setProperty("dataSource.databaseName", dbName)
         //Tune to match PgBouncer capacity
-        props.put("dataSource.logWriter", PrintWriter(System.out))
+        props["dataSource.logWriter"] = PrintWriter(System.out)
 
         val config = HikariConfig(props)
         val ds = HikariDataSource(config)

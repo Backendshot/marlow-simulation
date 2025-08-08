@@ -48,6 +48,7 @@ ktor-server-call-id = { module = "io.ktor:ktor-server-call-id", version.ref = "k
 ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor-version" }
 opentelemetry-exporter-logging = { module = "io.opentelemetry:opentelemetry-exporter-logging", version = "1.30.0" }
 jakarta-mail = { module = "com.sun.mail:jakarta.mail", version = "2.0.1" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor-version"}
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

@@ -93,7 +93,8 @@ class LoginController(private val ds: HikariDataSource) {
         }
         if (fileName.isBlank()) fileName = "error"
 
-        val fullUrl = "http://127.0.0.1:8080/image_uploads/${URLEncoder.encode(fileName, "UTF-8")}"
+        val fullUrl = "https://zcedjbxkrkqomofnlshh.supabase.co/storage/v1/object/public/image-uploads/${URLEncoder.encode(fileName, "UTF-8")}"
+        //http://127.0.0.1:8080/image-uploads/${URLEncoder.encode(fileName, "UTF-8")}" //for local upload
         return UserProfileImage(fullUrl)
     }
 

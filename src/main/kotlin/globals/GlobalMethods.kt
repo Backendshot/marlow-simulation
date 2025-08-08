@@ -5,6 +5,9 @@ import de.mkammerer.argon2.Argon2Factory
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.auth.*
+import io.ktor.client.plugins.auth.providers.*
+import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -65,6 +68,71 @@ class GlobalMethods {
         }
 
         return fileName
+    }
+
+    suspend fun uploadImageToSupabase(part: PartData.FileItem, bucketName: String): String {
+        val allowedExtensions = listOf("jpg", "jpeg", "png", "webp")
+        val originalName      = part.originalFileName ?: ""
+        val extension         = File(originalName).extension.lowercase()
+
+        require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
+
+        val fileName = "${UUID.randomUUID()}.$extension"
+
+        val dotenv = dotenv()
+        val projectRef = dotenv["PROJECT_REF"]
+        val supabaseUrl = "https://${projectRef}.supabase.co"
+        val supabaseKey =  dotenv["SUPABASE_SERVICE_ROLE_KEY"] ?: throw IllegalStateException("SUPABASE_SERVICE_ROLE_KEY not set") // store securely
+
+        val client = HttpClient(CIO) {
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        BearerTokens(supabaseKey, "")
+                    }
+                }
+            }
+        }
+
+        //create file bytes for uploading
+        val fileBytes = part.streamProvider().readBytes()
+
+        // Upload file
+        val response = client.put("$supabaseUrl/storage/v1/object/$bucketName/$fileName") {
+            setBody(ByteArrayContent(fileBytes))
+            header(HttpHeaders.ContentType, "image/${extension}")
+        }
+
+        if (response.status.value !in 200..299) {
+            throw Exception("Failed to upload image to Supabase: ${response.status}")
+        }
+
+        // Return the public URL
+//        return "$supabaseUrl/storage/v1/object/public/$bucketName/${URLEncoder.encode(fileName, "UTF-8")}"
+        return fileName
+    }
+
+    suspend fun deleteImageFromSupabase(fileName: String, bucketName: String) {
+        val dotenv = dotenv()
+        val projectRef = dotenv["PROJECT_REF"]
+        val supabaseUrl = "https://${projectRef}.supabase.co"
+        val supabaseKey =  dotenv["SUPABASE_SERVICE_ROLE_KEY"] ?: throw IllegalStateException("SUPABASE_SERVICE_ROLE_KEY not set") // store securely
+
+        val client = HttpClient(CIO) {
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        BearerTokens(supabaseKey, "")
+                    }
+                }
+            }
+        }
+
+        val response = client.delete("$supabaseUrl/storage/v1/object/$bucketName/$fileName")
+
+        if (response.status.value !in 200..299) {
+            println("Warning: Failed to delete old image from Supabase: ${response.status}")
+        }
     }
 
     suspend fun getAccessToken(): String {
