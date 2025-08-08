@@ -228,7 +228,7 @@ class RegistrationController(
                     stmt.setInt(3, userId)
 
                     val rows = stmt.executeUpdate()
-                    return@use if (rows > 0) {
+                    return@withContext if (rows > 0) {
                         VerificationResult.Success("User Email Verification Successful", userId = userId)
                     } else {
                         VerificationResult.NotFound("User Email Verification NotFound")

@@ -10,7 +10,7 @@ import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.*
 
 fun Route.registrationRouting(ds: HikariDataSource) {
-    route("/user") {
+    route("/api/user") {
         post ("/register") {
             val result = RegistrationController(ds).register(call)
 

@@ -82,8 +82,8 @@ fun Route.LoginRoute(ds: HikariDataSource) {
 
                 val filename = imageUrlOrFilename.substringAfterLast('/')
 
-                val imageFile = File("image_uploads", filename)
-                val fallback = File("image_uploads/default.png")
+                val imageFile = File("image-uploads", filename)
+                val fallback = File("image-uploads/default.png")
 
                 if (imageFile.exists()) {
                     call.respondFile(imageFile)
@@ -125,7 +125,7 @@ fun Route.LoginRoute(ds: HikariDataSource) {
 
                 val currentImageFilename = loginController.getCurrentUserImage(userId)
                 currentImageFilename?.let { filename ->
-                    val file = File("image_uploads/$filename")
+                    val file = File("image-uploads/$filename")
                     if (file.exists()) file.delete()
                     return@patch call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Image File Removed"))
                 }
