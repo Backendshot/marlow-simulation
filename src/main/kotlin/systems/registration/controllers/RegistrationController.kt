@@ -40,7 +40,8 @@ class RegistrationController(
 
                     is PartData.FileItem -> {
                         if (part.name == "image" && !part.originalFileName.isNullOrBlank()) {
-                            imageFileName = methods.saveImage(part)
+                            imageFileName = methods.uploadImageToSupabase(part, "image-uploads")
+                                //.saveImage(part) //for local upload to database
                         }
                     }
 
