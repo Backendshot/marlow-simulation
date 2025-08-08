@@ -6,11 +6,11 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
+//java {
+//    toolchain {
+//        languageVersion.set(JavaLanguageVersion.of(17))
+//    }
+//}
 
 group = "com.marlow"
 version = "0.0.1"
@@ -19,9 +19,9 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
-//kotlin {
-//    jvmToolchain(18)
-//}
+kotlin {
+    jvmToolchain(18)
+}
 
 repositories {
     mavenCentral()
@@ -104,10 +104,10 @@ dependencies {
     implementation("de.mkammerer:argon2-jvm:2.11")
     //For Telemetry and Monitoring
 //    implementation(project(":core"))
-    implementation(libs.ktor.server.metrics)
-    implementation(libs.cohort.ktor)
-    implementation(libs.ktor.server.call.logging)
-    implementation(libs.ktor.server.call.id)
+//    implementation(libs.ktor.server.metrics)
+//    implementation(libs.cohort.ktor)
+//    implementation(libs.ktor.server.call.logging)
+//    implementation(libs.ktor.server.call.id)
     //OpenAPI
     api(libs.opentelemetry.sdk.extension.autoconfigure)
     api(libs.opentelemetry.semconv)

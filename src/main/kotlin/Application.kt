@@ -75,7 +75,7 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureHTTP()
-    configureMonitoring()
+//    configureMonitoring()
     installGlobalErrorHandling(ds)
     configureRouting(ds)
 }
