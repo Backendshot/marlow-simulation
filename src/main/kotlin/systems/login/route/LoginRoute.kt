@@ -2,25 +2,21 @@ package com.marlow.systems.login.route
 
 import com.marlow.globals.ErrorHandler
 import com.marlow.globals.GlobalMethods
-import com.marlow.systems.login.controller.LoginController
-import com.marlow.systems.login.model.LoginRequest
-import com.marlow.systems.login.util.LoginAudit
-import com.marlow.systems.login.model.LogoutRequest
 import com.marlow.globals.GlobalResponse
+import com.marlow.systems.login.controller.LoginController
 import com.marlow.systems.login.model.ImageUploadResponse
+import com.marlow.systems.login.model.LoginRequest
+import com.marlow.systems.login.model.LogoutRequest
 import com.marlow.systems.login.model.Validator
+import com.marlow.systems.login.util.LoginAudit
 import com.marlow.systems.login.util.LoginJWT
 import com.marlow.systems.login.util.LoginSession
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
-import io.ktor.server.request.receive
-import io.ktor.server.request.receiveMultipart
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondFile
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import java.io.File
 
 fun Route.LoginRoute(ds: HikariDataSource) {
 
@@ -80,18 +76,27 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 val userProfile = loginController.getUserProfile(userId)
                 val imageUrlOrFilename = userProfile.userImg
 
-                val filename = imageUrlOrFilename.substringAfterLast('/')
+                //Commented section for local uploads
+//                val filename = imageUrlOrFilename.substringAfterLast('/')
+//
+//                val imageFile = File("image-uploads", filename)
+//                val fallback = File("image-uploads/default.png")
+//
+//                if (imageFile.exists()) {
+//                    call.respondFile(imageFile)
+//                } else if (fallback.exists()) {
+//                    call.respondFile(fallback)
+//                } else {
+//                    call.respond(HttpStatusCode.NotFound, GlobalResponse(404, false, "No image found"))
+//                }
 
-                val imageFile = File("image_uploads", filename)
-                val fallback = File("image_uploads/default.png")
+                //uncomment if storing URLs instead of filenames
+//                val dotenv = dotenv()
+//                val supabaseUrl = dotenv["SUPABASE_URL"]
+//                val bucketName = "image-uploads"
+//                val publicUrl = "$supabaseUrl/storage/v1/object/public/$bucketName/${URLEncoder.encode(imageUrlOrFilename, "UTF-8")}"
 
-                if (imageFile.exists()) {
-                    call.respondFile(imageFile)
-                } else if (fallback.exists()) {
-                    call.respondFile(fallback)
-                } else {
-                    call.respond(HttpStatusCode.NotFound, GlobalResponse(404, false, "No image found"))
-                }
+                call.respond(HttpStatusCode.OK, mapOf("imageUrl" to imageUrlOrFilename))
             } catch (e: Throwable) {
                 ErrorHandler.handle(call, e)
             }
@@ -109,7 +114,8 @@ fun Route.LoginRoute(ds: HikariDataSource) {
                 multipart.forEachPart { part ->
                     if (part is PartData.FileItem && part.name == "image") {
                         try {
-                            uploadedFileName = globalMethod.saveImage(part)
+                            uploadedFileName = globalMethod.uploadImageToSupabase(part, "image-uploads")
+                                //.saveImage(part) //for local uploads
                         } catch (e: Exception) {
                             imageError = "Invalid image format."
                         }
@@ -125,8 +131,11 @@ fun Route.LoginRoute(ds: HikariDataSource) {
 
                 val currentImageFilename = loginController.getCurrentUserImage(userId)
                 currentImageFilename?.let { filename ->
-                    val file = File("image_uploads/$filename")
-                    if (file.exists()) file.delete()
+//                    val file = File("image-uploads/$filename") //for local uploads
+//                    if (file.exists()) file.delete() //for local uploads
+                    if (filename.isNotBlank()) { //handles edge cases like blank strings ("")
+                        globalMethod.deleteImageFromSupabase(filename, bucketName = "image-uploads")
+                    }
                     return@patch call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Image File Removed"))
                 }
 

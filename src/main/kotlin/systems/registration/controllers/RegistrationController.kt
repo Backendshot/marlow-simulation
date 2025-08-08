@@ -40,7 +40,8 @@ class RegistrationController(
 
                     is PartData.FileItem -> {
                         if (part.name == "image" && !part.originalFileName.isNullOrBlank()) {
-                            imageFileName = methods.saveImage(part)
+                            imageFileName = methods.uploadImageToSupabase(part, "image-uploads")
+                                //.saveImage(part) //for local upload to database
                         }
                     }
 
@@ -228,7 +229,7 @@ class RegistrationController(
                     stmt.setInt(3, userId)
 
                     val rows = stmt.executeUpdate()
-                    return@use if (rows > 0) {
+                    return@withContext if (rows > 0) {
                         VerificationResult.Success("User Email Verification Successful", userId = userId)
                     } else {
                         VerificationResult.NotFound("User Email Verification NotFound")
