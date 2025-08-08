@@ -1,3 +1,4 @@
+import java.time.LocalDateTime
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -12,11 +13,6 @@ application {
     mainClass = "io.ktor.server.netty.EngineMain"
 }
 
-// This is to produce executable file -all.jar
-tasks.jar {
-    manifest.attributes["Main-Class"] = "io.ktor.server.netty.EngineMain"
-}
-
 kotlin {
     jvmToolchain(18)
 }
@@ -26,9 +22,37 @@ repositories {
 }
 
 tasks.jar {
+    archiveBaseName.set("todo-deploy")
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set("")
+
     manifest {
         attributes["Main-Class"] = "io.ktor.server.netty.EngineMain"
     }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.get().output)
+    dependsOn(configurations.runtimeClasspath)
+
+    from({
+        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+    })
+}
+
+val logDeploy by tasks.registering {
+    group = "build"
+    description = "Logs deployment version"
+
+    doLast {
+        val logFile = file("deployLogs.txt") // Root project directory
+        val versionInfo = "A new version of the Todo-System was deployed: v$version at ${LocalDateTime.now()}\n"
+        logFile.appendText(versionInfo)
+        println("📦 $versionInfo")
+    }
+}
+
+tasks.named("jar") {
+    finalizedBy(logDeploy)
 }
 
 dependencies {
