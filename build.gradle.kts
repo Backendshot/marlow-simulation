@@ -44,7 +44,7 @@ val logDeploy by tasks.registering {
     description = "Logs deployment version"
 
     doLast {
-        val logFile = file("deployLogs.txt") // Root project directory
+        val logFile = file("deployLogs.txt")
         val versionInfo = "A new version of the Todo-System was deployed: v$version at ${LocalDateTime.now()}\n"
         logFile.appendText(versionInfo)
         println("📦 $versionInfo")
