@@ -33,7 +33,7 @@ val client = HttpClient(CIO) {
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
 
-    embeddedServer(Netty, port = port, host = "0.0.0.0") {
+    embeddedServer(Netty, port = System.getenv("PORT")?.toInt() ?: 8080, host = "0.0.0.0") {
         module()
     }.start(wait = true)
 }
