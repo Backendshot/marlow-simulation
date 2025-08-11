@@ -1,0 +1,1 @@
+web: java -jar build/libs/todo-deploy-0.0.1.jar

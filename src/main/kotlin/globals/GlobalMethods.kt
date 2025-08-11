@@ -55,7 +55,7 @@ class GlobalMethods {
         require(extension in allowedExtensions) { "Invalid image type: .$extension is not allowed." }
 
         val fileName = "${UUID.randomUUID()}.$extension"
-        val filePath = "image-uploads/$fileName"
+        val filePath = "https://zcedjbxkrkqomofnlshh.supabase.co/storage/v1/object/public/image-uploads/$fileName"
 
         val file = File(filePath)
         file.parentFile.mkdirs()

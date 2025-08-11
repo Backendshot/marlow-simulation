@@ -35,8 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
-.env
 
 #for deployment
-/build
-*.jar
+#/build
+#*.jar

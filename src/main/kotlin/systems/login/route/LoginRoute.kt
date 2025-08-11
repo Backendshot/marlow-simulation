@@ -17,6 +17,7 @@ import io.ktor.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.io.File
 
 fun Route.LoginRoute(ds: HikariDataSource) {
 
@@ -131,12 +132,8 @@ fun Route.LoginRoute(ds: HikariDataSource) {
 
                 val currentImageFilename = loginController.getCurrentUserImage(userId)
                 currentImageFilename?.let { filename ->
-//                    val file = File("image-uploads/$filename") //for local uploads
-//                    if (file.exists()) file.delete() //for local uploads
-                    if (filename.isNotBlank()) { //handles edge cases like blank strings ("")
-                        globalMethod.deleteImageFromSupabase(filename, bucketName = "image-uploads")
-                    }
-                    return@patch call.respond(HttpStatusCode.OK, GlobalResponse(200, true, "Image File Removed"))
+                    val file = File("https://zcedjbxkrkqomofnlshh.supabase.co/storage/v1/object/public/image-uploads/$filename") //for local uploads
+                    if (file.exists()) file.delete() //for local uploads
                 }
 
                 val result = loginController.patchUserProfile(userId, uploadedFileName)

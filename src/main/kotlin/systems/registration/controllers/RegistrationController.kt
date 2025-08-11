@@ -142,7 +142,7 @@ class RegistrationController(
                 }
             }
 
-            val verificationLink = "http://localhost:8080/api/user/email/verify?userId=${user.id}"
+            val verificationLink = "https://web-production-1de00.up.railway.app/api/user/email/verify?userId=${user.id}"
             val dotEnv           = dotenv()
 
             val emailLogs = EmailSendingModel(
@@ -196,8 +196,7 @@ class RegistrationController(
                     accessToken = accessToken
                 )
             } catch (emailEx: Exception) {
-                println("⚠️ Failed to send email: ${emailEx.message}")
-                // You can optionally log this to DB
+                println("Failed to send email: ${emailEx.message}")
             }
 
             RegistrationResult.Success("User registered successfully.", user.id)

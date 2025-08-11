@@ -6,6 +6,12 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
+//java {
+//    toolchain {
+//        languageVersion.set(JavaLanguageVersion.of(17))
+//    }
+//}
+
 group = "com.marlow"
 version = "0.0.1"
 
@@ -47,7 +53,7 @@ val logDeploy by tasks.registering {
         val logFile = file("deployLogs.txt")
         val versionInfo = "A new version of the Todo-System was deployed: v$version at ${LocalDateTime.now()}\n"
         logFile.appendText(versionInfo)
-        println("📦 $versionInfo")
+        println(versionInfo)
     }
 }
 
@@ -98,10 +104,10 @@ dependencies {
     implementation("de.mkammerer:argon2-jvm:2.11")
     //For Telemetry and Monitoring
 //    implementation(project(":core"))
-    implementation(libs.ktor.server.metrics)
-    implementation(libs.cohort.ktor)
-    implementation(libs.ktor.server.call.logging)
-    implementation(libs.ktor.server.call.id)
+//    implementation(libs.ktor.server.metrics)
+//    implementation(libs.cohort.ktor)
+//    implementation(libs.ktor.server.call.logging)
+//    implementation(libs.ktor.server.call.id)
     //OpenAPI
     api(libs.opentelemetry.sdk.extension.autoconfigure)
     api(libs.opentelemetry.semconv)
