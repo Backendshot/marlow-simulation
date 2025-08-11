@@ -1,0 +1,4 @@
+FROM eclipse-temurin:18-jdk
+WORKDIR /app
+COPY build/libs/todo-deploy-0.0.1.jar app.jar
+CMD ["java", "-jar", "app.jar"]
