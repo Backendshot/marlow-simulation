@@ -43,7 +43,7 @@ fun Route.registrationRouting(ds: HikariDataSource) {
         }
         get("/email/verify") {
             val result    = RegistrationController(ds).verifyEmail(call)
-            val uiLink    = "http://127.0.0.1:5500/welcome.html?status="
+            val uiLink    = "https://todo-system-sigma.vercel.app/welcome.html?status="
             val permanent = false
 
             when (result) {
