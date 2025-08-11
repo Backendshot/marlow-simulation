@@ -24,7 +24,7 @@ FROM eclipse-temurin:18-jdk
 WORKDIR /app
 
 # Copy the jar from the builder stage
-COPY --from=builder /app/build/libs/*-all.jar app.jar
+COPY --from=builder /app/build/libs/.jar app.jar
 
 # Run the application
 CMD ["java", "-jar", "app.jar"]
