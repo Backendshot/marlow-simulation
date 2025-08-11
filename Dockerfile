@@ -16,7 +16,7 @@ COPY src src
 RUN chmod +x gradlew
 
 # Build the shadow jar
-RUN ./gradlew shadowJar
+RUN ./gradlew clean jar --no-build-cache
 
 # Final image
 FROM eclipse-temurin:18-jdk
