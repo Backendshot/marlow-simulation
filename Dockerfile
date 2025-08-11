@@ -24,3 +24,9 @@ CMD ["java", "-jar", "app.jar"]
 
 #Copy the env file
 COPY .env .env
+
+#Copy Swagger files
+COPY src/main/kotlin/systems/login/documentation/documentation.yaml systems/login/documentation/documentation.yaml
+COPY src/main/kotlin/systems/registration/documentation/documentation.yaml systems/registration/documentation/documentation.yaml
+COPY src/main/kotlin/systems/todo/documentation/documentation.yaml systems/todo/documentation/documentation.yaml
+
